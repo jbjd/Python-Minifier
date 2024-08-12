@@ -1,0 +1,5 @@
+[project]
+authors = [
+  {name = "James Demetris"},
+]
+name = "Personal_Python_Minifier"
