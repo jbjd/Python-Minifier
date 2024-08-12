@@ -10,6 +10,11 @@ from parser_utils import (
 class MinifyUnparser(_Unparser):
     """"""
 
+    def fill(self, text=""):
+        """Overrides super fill to use tabs over spaces"""
+        self.maybe_newline()
+        self.write("\t" * self._indent + text)
+
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """Removes doc strings and type hints from function definitions"""
         remove_function_dangling_expressions(node)

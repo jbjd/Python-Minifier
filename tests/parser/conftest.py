@@ -15,6 +15,6 @@ def foo(bar: str) -> None:
 """,
         """
 def foo(bar):
-    return 'Hello World'
+\treturn 'Hello World'
 """.strip(),
     )
