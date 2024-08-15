@@ -12,3 +12,9 @@ def test_function_only_docstring(only_docstring_function: BeforeAndAfter):
     minified_function: str = run_minify_parser(only_docstring_function.before)
     assert minified_function == only_docstring_function.after
     assert is_python_code_valid(minified_function)
+
+
+def test_function_with_many_args(many_args_function: BeforeAndAfter):
+    minified_function: str = run_minify_parser(many_args_function.before)
+    assert minified_function == many_args_function.after
+    assert is_python_code_valid(minified_function)

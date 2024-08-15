@@ -34,3 +34,17 @@ def foo(bar):pass
 print()
 """.strip(),
     )
+
+
+@pytest.fixture
+def many_args_function() -> str:
+    return BeforeAndAfter(
+        """
+def foo(bar, spam, eggs):
+    return None
+""",
+        """
+def foo(bar,spam,eggs):
+\treturn None
+""".strip(),
+    )

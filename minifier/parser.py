@@ -18,6 +18,21 @@ class MinifyUnparser(_Unparser):
         self.write(node.arg)
 
     @override
+    def write(self, *text: str):
+        text = tuple(map(self._update_text_to_write, text))
+        self._source.extend(text)
+
+    @staticmethod
+    def _update_text_to_write(text: str) -> str:
+        """Give text to be written, replace some specific occurancces"""
+        match text:
+            case ", ":
+                return ","
+
+            case _:
+                return text
+
+    @override
     def _function_helper(
         self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
     ) -> None:
