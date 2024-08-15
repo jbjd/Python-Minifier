@@ -10,11 +10,3 @@ def remove_function_dangling_expressions(node: ast.FunctionDef) -> None:
             isinstance(element, ast.Expr) and isinstance(element.value, ast.Constant)
         )
     ]
-
-
-def remove_function_args_type_hints(node: ast.FunctionDef) -> None:
-    node.returns = None
-
-    argument: ast.arg
-    for argument in node.args.args:
-        argument.annotation = None

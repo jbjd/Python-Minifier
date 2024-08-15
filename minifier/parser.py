@@ -2,10 +2,7 @@ import ast
 from ast import _Unparser  # type: ignore
 from typing import Literal, override
 
-from parser_utils import (
-    remove_function_args_type_hints,
-    remove_function_dangling_expressions,
-)
+from parser_utils import remove_function_dangling_expressions
 
 
 class MinifyUnparser(_Unparser):
@@ -17,12 +14,15 @@ class MinifyUnparser(_Unparser):
         self.write("\t" * self._indent + text)
 
     @override
+    def visit_arg(self, node: ast.arg):
+        self.write(node.arg)
+
+    @override
     def _function_helper(
         self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
     ) -> None:
         """Removes doc strings and type hints from function definitions"""
         remove_function_dangling_expressions(node)
-        remove_function_args_type_hints(node)
 
         self.maybe_newline()
         for decorator in node.decorator_list:
