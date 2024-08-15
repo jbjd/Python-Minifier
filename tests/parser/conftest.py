@@ -11,10 +11,12 @@ def foo(bar: str) -> None:
     '''Some Doc String'''
 
     3  # This is some dangling constant
+    print(3)
     return "Hello World"
 """,
         """
 def foo(bar):
+\tprint(3)
 \treturn 'Hello World'
 """.strip(),
     )
@@ -44,7 +46,6 @@ def foo(bar, spam, eggs):
     return None
 """,
         """
-def foo(bar,spam,eggs):
-\treturn None
+def foo(bar,spam,eggs):return None
 """.strip(),
     )

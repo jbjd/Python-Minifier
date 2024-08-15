@@ -8,17 +8,33 @@ from parser_utils import remove_function_dangling_expressions
 class MinifyUnparser(_Unparser):
 
     @override
-    def fill(self, text: str = ""):
+    def fill(self, text: str = "", same_line: bool = False) -> None:
         """Overrides super fill to use tabs over spaces"""
-        self.maybe_newline()
-        self.write("\t" * self._indent + text)
+        if same_line:
+            self.write(text)
+        else:
+            self.maybe_newline()
+            self.write("\t" * self._indent + text)
 
     @override
-    def visit_arg(self, node: ast.arg):
+    def visit_Pass(self, node: ast.Pass) -> None:
+        same_line: bool = self._get_can_write_same_line(node)
+        self.fill("pass", same_line=same_line)
+
+    @override
+    def visit_Return(self, node: ast.Return) -> None:
+        same_line: bool = self._get_can_write_same_line(node)
+        self.fill("return", same_line=same_line)
+        if node.value:
+            self.write(" ")
+            self.traverse(node.value)
+
+    @override
+    def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
 
     @override
-    def write(self, *text: str):
+    def write(self, *text: str) -> None:
         text = tuple(map(self._update_text_to_write, text))
         self._source.extend(text)
 
@@ -53,11 +69,20 @@ class MinifyUnparser(_Unparser):
         # If a function was only dangling expressions, like a doc string
         # It needs to be filled with a pass to be valid
         if not node.body:
-            self.write(":pass")
-            return
+            node.body.append(ast.Pass())
 
-        with self.block(extra=self.get_type_comment(node)):
-            self._write_docstring_and_traverse_body(node)
+        with self.block():
+            if len(node.body) == 1:
+                self._set_can_write_same_line(node.body[0])
+            self.traverse(node.body)
+
+    @staticmethod
+    def _set_can_write_same_line(node: ast.stmt) -> None:
+        node.write_same_line = True
+
+    @staticmethod
+    def _get_can_write_same_line(node: ast.stmt) -> bool:
+        return getattr(node, "write_same_line", False)
 
 
 def run_minify_parser(source: str) -> str:
