@@ -1,6 +1,8 @@
 import setuptools
 
+NAME: str = "personal_python_minifier"
+
 setuptools.setup(
-    name="python_minifier",
-    packages=setuptools.find_packages(include=["python_minifier", "python_minifier.*"]),
+    name=NAME,
+    packages=setuptools.find_packages(include=[NAME, f"{NAME}.*"]),
 )

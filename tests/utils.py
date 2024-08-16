@@ -1,7 +1,7 @@
 import ast
 from typing import NamedTuple
 
-from python_minifier.parser import run_minify_parser
+from personal_python_minifier.parser import run_minify_parser
 
 
 class BeforeAndAfter(NamedTuple):

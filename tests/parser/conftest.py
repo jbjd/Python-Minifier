@@ -62,3 +62,21 @@ class Foo():
 class Foo:pass
 """.strip(),
     )
+
+
+@pytest.fixture
+def tuple_class() -> BeforeAndAfter:
+    """Can't break annotations on tuple classes"""
+    return BeforeAndAfter(
+        """
+class SomeTuple():
+    '''A tuple, wow!'''
+    thing1: str
+    thing2: int
+""",
+        """
+class SomeTuple:
+\tthing1: str
+\tthing2: int
+""".strip(),
+    )
