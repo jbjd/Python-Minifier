@@ -43,10 +43,13 @@ def many_args_function() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
 def foo(bar, spam, eggs):
-    return None
+    a: str = 1
+    return a
 """,
         """
-def foo(bar,spam,eggs):return None
+def foo(bar,spam,eggs):
+\ta = 1
+\treturn a
 """.strip(),
     )
 

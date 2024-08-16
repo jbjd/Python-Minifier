@@ -25,6 +25,7 @@ class MinifyUnparser(_Unparser):
             self.write("\t" * self._indent + text)
 
     def write(self, *text: str) -> None:
+        """Write text, with some mapping replacements"""
         text = tuple(map(self._update_text_to_write, text))
         self._source.extend(text)
 
@@ -41,6 +42,23 @@ class MinifyUnparser(_Unparser):
 
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
+
+    def visit_AnnAssign(self, node):
+        """Only writes type annotations if necessary"""
+        self.fill()
+        with self.delimit_if(
+            "(", ")", not node.simple and isinstance(node.target, ast.Name)
+        ):
+            self.traverse(node.target)
+
+        # TODO: in most cases when no value we can still skip type hint
+        # Tuple classes we can't though, so will need to detect them
+        if node.value:
+            self.write(" = ")
+            self.traverse(node.value)
+        else:
+            self.write(": ")
+            self.traverse(node.annotation)
 
     def visit_ClassDef(
         self, node: ast.ClassDef, base_classes_to_ignore: Iterable[str] | None = None
