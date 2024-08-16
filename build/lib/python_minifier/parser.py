@@ -2,7 +2,7 @@ import ast
 from ast import _Unparser  # type: ignore
 from typing import Literal
 
-from personal_python_minifier.parser_utils import remove_function_dangling_expressions
+from personal_python_minifier.parser_utils import remove_dangling_expressions
 from personal_python_minifier.factories.node_factory import SameLineNodeFactory
 
 
@@ -15,6 +15,10 @@ class MinifyUnparser(_Unparser):
         else:
             self.maybe_newline()
             self.write("\t" * self._indent + text)
+
+    def write(self, *text: str) -> None:
+        text = tuple(map(self._update_text_to_write, text))
+        self._source.extend(text)
 
     def visit_Pass(self, node: ast.Pass) -> None:
         same_line: bool = self._get_can_write_same_line(node)
@@ -30,9 +34,9 @@ class MinifyUnparser(_Unparser):
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
 
-    def write(self, *text: str) -> None:
-        text = tuple(map(self._update_text_to_write, text))
-        self._source.extend(text)
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        remove_dangling_expressions(node)
+        self.visit_ClassDef(node)
 
     @staticmethod
     def _update_text_to_write(text: str) -> str:
@@ -58,7 +62,7 @@ class MinifyUnparser(_Unparser):
         self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
     ) -> None:
         """Removes doc strings and type hints from function definitions"""
-        remove_function_dangling_expressions(node)
+        remove_dangling_expressions(node)
 
         self.maybe_newline()
         for decorator in node.decorator_list:

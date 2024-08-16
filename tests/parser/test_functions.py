@@ -1,7 +1,7 @@
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correctness
 
 
-def test_dangling_constants_function(dangling_constants_function: BeforeAndAfter):
+def test_function_dangling_constants(dangling_constants_function: BeforeAndAfter):
     run_minifiyer_and_assert_correctness(dangling_constants_function)
 
 

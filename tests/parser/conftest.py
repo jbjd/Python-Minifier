@@ -52,6 +52,24 @@ def foo(bar,spam,eggs):return None
 
 
 @pytest.fixture
+def dangling_constants_class() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+class SomeClass:
+    '''has a docstring'''
+    def foo(bar):
+        pass
+
+    123
+""",
+        """
+class SomeClass:
+\tdef foo(bar):pass
+""".strip(),
+    )
+
+
+@pytest.fixture
 def only_docstring_class() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
