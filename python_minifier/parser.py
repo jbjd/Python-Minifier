@@ -2,8 +2,8 @@ import ast
 from ast import _Unparser  # type: ignore
 from typing import Literal
 
-from parser_utils import remove_function_dangling_expressions
-from factories.node_factory import SameLineNodeFactory
+from python_minifier.parser_utils import remove_function_dangling_expressions
+from python_minifier.factories.node_factory import SameLineNodeFactory
 
 
 class MinifyUnparser(_Unparser):

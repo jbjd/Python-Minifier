@@ -1,5 +1,5 @@
-from flake_wrapper import run_autoflake
-from parser import run_minify_parser
+from python_minifier.flake_wrapper import run_autoflake
+from python_minifier.parser import run_minify_parser
 
 
 def minify(source: str, remove_unused_imports: bool = False) -> str:
