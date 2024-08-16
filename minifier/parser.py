@@ -1,13 +1,13 @@
 import ast
 from ast import _Unparser  # type: ignore
-from typing import Literal, override
+from typing import Literal
 
 from parser_utils import remove_function_dangling_expressions
+from factories.node_factory import SameLineNodeFactory
 
 
 class MinifyUnparser(_Unparser):
 
-    @override
     def fill(self, text: str = "", same_line: bool = False) -> None:
         """Overrides super fill to use tabs over spaces"""
         if same_line:
@@ -16,12 +16,10 @@ class MinifyUnparser(_Unparser):
             self.maybe_newline()
             self.write("\t" * self._indent + text)
 
-    @override
     def visit_Pass(self, node: ast.Pass) -> None:
         same_line: bool = self._get_can_write_same_line(node)
         self.fill("pass", same_line=same_line)
 
-    @override
     def visit_Return(self, node: ast.Return) -> None:
         same_line: bool = self._get_can_write_same_line(node)
         self.fill("return", same_line=same_line)
@@ -29,11 +27,9 @@ class MinifyUnparser(_Unparser):
             self.write(" ")
             self.traverse(node.value)
 
-    @override
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
 
-    @override
     def write(self, *text: str) -> None:
         text = tuple(map(self._update_text_to_write, text))
         self._source.extend(text)
@@ -48,7 +44,16 @@ class MinifyUnparser(_Unparser):
             case _:
                 return text
 
-    @override
+    def _write_docstring_and_traverse_body(self, node) -> None:
+        if _ := self.get_raw_docstring(node):
+            # Skip writing doc string
+            if len(node.body) == 1:
+                self.traverse(SameLineNodeFactory.create_pass())
+            else:
+                self.traverse(node.body[1:])
+        else:
+            self.traverse(node.body)
+
     def _function_helper(
         self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
     ) -> None:
@@ -78,7 +83,7 @@ class MinifyUnparser(_Unparser):
 
     @staticmethod
     def _set_can_write_same_line(node: ast.stmt) -> None:
-        node.write_same_line = True
+        node.write_same_line = True  # type: ignore
 
     @staticmethod
     def _get_can_write_same_line(node: ast.stmt) -> bool:

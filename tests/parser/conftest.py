@@ -4,7 +4,7 @@ from tests.utils import BeforeAndAfter
 
 
 @pytest.fixture
-def dangling_constants_function() -> str:
+def dangling_constants_function() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
 def foo(bar: str) -> None:
@@ -23,7 +23,7 @@ def foo(bar):
 
 
 @pytest.fixture
-def only_docstring_function() -> str:
+def only_docstring_function() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
 def foo(bar):
@@ -39,7 +39,7 @@ print()
 
 
 @pytest.fixture
-def many_args_function() -> str:
+def many_args_function() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
 def foo(bar, spam, eggs):
@@ -47,5 +47,18 @@ def foo(bar, spam, eggs):
 """,
         """
 def foo(bar,spam,eggs):return None
+""".strip(),
+    )
+
+
+@pytest.fixture
+def only_docstring_class() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+class Foo():
+    '''Some Class'''
+""",
+        """
+class Foo:pass
 """.strip(),
     )
