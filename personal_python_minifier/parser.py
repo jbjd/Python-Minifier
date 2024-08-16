@@ -1,6 +1,6 @@
 import ast
 from ast import _Unparser  # type: ignore
-from typing import Literal
+from typing import Iterable, Literal
 
 from personal_python_minifier.parser_utils import (
     add_pass_if_body_empty,
@@ -42,8 +42,13 @@ class MinifyUnparser(_Unparser):
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+    def visit_ClassDef(
+        self, node: ast.ClassDef, base_classes_to_ignore: Iterable[str] | None = None
+    ) -> None:
         remove_dangling_expressions(node)
+
+        if base_classes_to_ignore:
+            ignore_base_classes(node, base_classes_to_ignore)
 
         if self._use_version_optimization((3, 0)):
             ignore_base_classes(node, ["object"])
