@@ -11,3 +11,7 @@ def test_tuple_class(tuple_class: BeforeAndAfter):
 
 def test_class_dangling_constants(tuple_class: BeforeAndAfter):
     run_minifiyer_and_assert_correctness(tuple_class)
+
+
+def test_class_ignorable_bases(ignorable_bases_class: BeforeAndAfter):
+    run_minifiyer_and_assert_correctness(ignorable_bases_class, python_version=(3, 0))

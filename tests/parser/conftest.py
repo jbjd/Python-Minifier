@@ -98,3 +98,16 @@ class SomeTuple:
 \tthing2: int
 """.strip(),
     )
+
+
+@pytest.fixture
+def ignorable_bases_class() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+class Foo(object):
+    pass
+""",
+        """
+class Foo:pass
+""".strip(),
+    )

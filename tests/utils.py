@@ -11,8 +11,10 @@ class BeforeAndAfter(NamedTuple):
     after: str
 
 
-def run_minifiyer_and_assert_correctness(source: BeforeAndAfter):
-    minified_function: str = run_minify_parser(source.before)
+def run_minifiyer_and_assert_correctness(
+    source: BeforeAndAfter, python_version: tuple[int, int] | None = None
+):
+    minified_function: str = run_minify_parser(source.before, python_version)
     assert source.after == minified_function
     assert is_python_code_valid(minified_function)
 
