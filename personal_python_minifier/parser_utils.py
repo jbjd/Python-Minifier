@@ -1,7 +1,7 @@
 import ast
 
 
-def remove_function_dangling_expressions(node: ast.FunctionDef) -> None:
+def remove_dangling_expressions(node: ast.FunctionDef) -> None:
     """Removes constant daggling expression like doc strings"""
     node.body = [
         element
