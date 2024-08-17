@@ -1,6 +1,6 @@
 import pytest
-
 from personal_python_minifier.parser import MinifyUnparser
+
 from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
 
 
@@ -110,4 +110,18 @@ a: int
 b: int = 2
 """,
         "b = 2",
+    )
+
+
+@pytest.fixture
+def futures_imports() -> BeforeAndAfterBasedOnVersion:
+    many_futures_imports: str = """
+from __future__ import annotations
+from __future__ import generator_stop
+from __future__ import unicode_literals
+from __future__ import with_statement
+"""
+    return BeforeAndAfterBasedOnVersion(
+        many_futures_imports,
+        {"3.7": "", None: many_futures_imports.strip()},
     )

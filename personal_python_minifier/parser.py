@@ -2,13 +2,14 @@ import ast
 from ast import _Unparser  # type: ignore
 from typing import Iterable, Literal
 
+from personal_python_minifier.factories.node_factory import SameLineNodeFactory
+from personal_python_minifier.futures import get_ignorable_futures
 from personal_python_minifier.parser_utils import (
     add_pass_if_body_empty,
     ignore_base_classes,
     remove_dangling_expressions,
     remove_empty_annotations,
 )
-from personal_python_minifier.factories.node_factory import SameLineNodeFactory
 
 
 class MinifyUnparser(_Unparser):
@@ -43,6 +44,21 @@ class MinifyUnparser(_Unparser):
         if node.value:
             self.write(" ")
             self.traverse(node.value)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        """Skip unnecessary futures imports"""
+        if node.module == "__future__" and self.target_python_version is not None:
+            ignoreable_futures: list[str] = get_ignorable_futures(
+                self.target_python_version
+            )
+            node.names = list(
+                filter(lambda n: n.name not in ignoreable_futures, node.names)
+            )
+
+        if not node.names:
+            return
+
+        super().visit_ImportFrom(node)
 
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
