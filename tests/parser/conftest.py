@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import BeforeAndAfter
+from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
 
 
 @pytest.fixture
@@ -104,13 +104,11 @@ class SomeTuple:
 
 
 @pytest.fixture
-def ignorable_bases_class() -> BeforeAndAfter:
-    return BeforeAndAfter(
+def ignorable_bases_class() -> BeforeAndAfterBasedOnVersion:
+    return BeforeAndAfterBasedOnVersion(
         """
 class Foo(object):
     pass
 """,
-        """
-class Foo:pass
-""".strip(),
+        {"3.0": "class Foo:pass", None: "class Foo(object):pass"},
     )
