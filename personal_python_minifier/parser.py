@@ -77,6 +77,14 @@ class MinifyUnparser(_Unparser):
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
 
+    def visit_arguments(self, node: ast.arguments) -> None:
+        if node.kwarg:
+            node.kwarg.annotation = None
+        if node.vararg:
+            node.vararg.annotation = None
+
+        super().visit_arguments(node)
+
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.fill()
         self.traverse(node.target)
@@ -98,7 +106,7 @@ class MinifyUnparser(_Unparser):
             self.write("=")
             self.traverse(node.value)
         elif self.within_class and not self.within_function:
-            self.write(": 'Any'")
+            self.write(":'Any'")
 
     @staticmethod
     def _within_class_node(function):
@@ -115,18 +123,31 @@ class MinifyUnparser(_Unparser):
     ) -> None:
         remove_dangling_expressions(node)
 
+        add_pass_if_body_empty(node)
+        if len(node.body) == 1:
+            self._set_can_write_same_line(node.body[0])
+
         if base_classes_to_ignore:
             ignore_base_classes(node, base_classes_to_ignore)
 
         if self._use_version_optimization((3, 0)):
             ignore_base_classes(node, ["object"])
 
-        add_pass_if_body_empty(node)
+        self._write_decorators(node)
 
-        if len(node.body) == 1:
-            self._set_can_write_same_line(node.body[0])
+        self.fill("class " + node.name)
 
-        super().visit_ClassDef(node)
+        with self.delimit_if("(", ")", condition=node.bases or node.keywords):
+            for index, base in enumerate(node.bases):
+                if index > 0:
+                    self.write(",")
+                self.traverse(base)
+            for keyword in enumerate(node.keywords):
+                if index > 0:
+                    self.write(",")
+                self.traverse(keyword)
+
+        self._traverse_body(node)
 
     def _write_docstring_and_traverse_body(self, node) -> None:
         if _ := self.get_raw_docstring(node):
@@ -155,10 +176,11 @@ class MinifyUnparser(_Unparser):
         remove_dangling_expressions(node)
         remove_empty_annotations(node)
 
-        self.maybe_newline()
-        for decorator in node.decorator_list:
-            self.fill("@")
-            self.traverse(decorator)
+        add_pass_if_body_empty(node)
+        if len(node.body) == 1:
+            self._set_can_write_same_line(node.body[0])
+
+        self._write_decorators(node)
 
         def_str = f"{fill_suffix} {node.name}"
         self.fill(def_str)
@@ -166,11 +188,15 @@ class MinifyUnparser(_Unparser):
         with self.delimit("(", ")"):
             self.traverse(node.args)
 
-        add_pass_if_body_empty(node)
+        self._traverse_body(node)
 
+    def _write_decorators(self, node: ast.ClassDef | ast.FunctionDef) -> None:
+        for decorator in node.decorator_list:
+            self.fill("@")
+            self.traverse(decorator)
+
+    def _traverse_body(self, node: ast.ClassDef | ast.FunctionDef) -> None:
         with self.block():
-            if len(node.body) == 1:
-                self._set_can_write_same_line(node.body[0])
             self.traverse(node.body)
 
     def _use_version_optimization(self, python_version: tuple[int, int]) -> bool:

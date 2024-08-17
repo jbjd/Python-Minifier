@@ -85,8 +85,8 @@ class SomeTuple():
 """,
         """
 class SomeTuple:
-\tthing1: 'Any'
-\tthing2: 'Any'
+\tthing1:'Any'
+\tthing2:'Any'
 """.strip(),
     )
 

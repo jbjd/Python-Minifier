@@ -18,10 +18,6 @@ class BeforeAndAfterBasedOnVersion(NamedTuple):
     after: dict[str]
 
 
-def noop(*args, **kwargs):
-    pass
-
-
 def run_minifiyer_and_assert_correct_multiple_versions(
     source: BeforeAndAfterBasedOnVersion,
 ):
