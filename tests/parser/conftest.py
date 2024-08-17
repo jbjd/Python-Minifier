@@ -11,29 +11,11 @@ def foo(bar: str) -> None:
     '''Some Doc String'''
 
     3  # This is some dangling constant
-    print(3)
+    a: int
     return "Hello World"
 """,
         """
-def foo(bar):
-\tprint(3)
-\treturn 'Hello World'
-""".strip(),
-    )
-
-
-@pytest.fixture
-def only_docstring_function() -> BeforeAndAfter:
-    return BeforeAndAfter(
-        """
-def foo(bar):
-    '''Some Doc String'''
-
-print()
-""",
-        """
-def foo(bar):pass
-print()
+def foo(bar):return 'Hello World'
 """.strip(),
     )
 
@@ -43,7 +25,7 @@ def many_args_function() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
 def foo(bar, spam, eggs):
-    a: str = 1
+    a: int = 1
     return a
 """,
         """
@@ -97,8 +79,8 @@ class SomeTuple():
 """,
         """
 class SomeTuple:
-\tthing1: str
-\tthing2: int
+\tthing1: 'Any'
+\tthing2: 'Any'
 """.strip(),
     )
 
@@ -111,4 +93,15 @@ class Foo(object):
     pass
 """,
         {"3.0": "class Foo:pass", None: "class Foo(object):pass"},
+    )
+
+
+@pytest.fixture
+def annotations_script() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+a: int
+b: int = 2
+""",
+        "b = 2",
     )

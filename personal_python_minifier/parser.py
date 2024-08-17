@@ -6,6 +6,7 @@ from personal_python_minifier.parser_utils import (
     add_pass_if_body_empty,
     ignore_base_classes,
     remove_dangling_expressions,
+    remove_empty_annotations,
 )
 from personal_python_minifier.factories.node_factory import SameLineNodeFactory
 
@@ -15,6 +16,9 @@ class MinifyUnparser(_Unparser):
     def __init__(self, target_python_version: tuple[int, int] | None = None) -> None:
         super().__init__()
         self.target_python_version: tuple[int, int] | None = target_python_version
+
+        self.within_class: bool = False
+        self.within_function: bool = False
 
     def fill(self, text: str = "", same_line: bool = False) -> None:
         """Overrides super fill to use tabs over spaces"""
@@ -45,21 +49,31 @@ class MinifyUnparser(_Unparser):
 
     def visit_AnnAssign(self, node):
         """Only writes type annotations if necessary"""
+        if not node.value and (not self.within_class or self.within_function):
+            return
+
         self.fill()
         with self.delimit_if(
             "(", ")", not node.simple and isinstance(node.target, ast.Name)
         ):
             self.traverse(node.target)
 
-        # TODO: in most cases when no value we can still skip type hint
-        # Tuple classes we can't though, so will need to detect them
         if node.value:
             self.write(" = ")
             self.traverse(node.value)
-        else:
-            self.write(": ")
-            self.traverse(node.annotation)
+        elif self.within_class and not self.within_function:
+            self.write(": 'Any'")
 
+    @staticmethod
+    def _within_class_node(function):
+        def wrapper(self: "MinifyUnparser", *args, **kwargs) -> None:
+            self.within_class = True
+            function(self, *args, **kwargs)
+            self.within_class = False
+
+        return wrapper
+
+    @_within_class_node
     def visit_ClassDef(
         self, node: ast.ClassDef, base_classes_to_ignore: Iterable[str] | None = None
     ) -> None:
@@ -98,11 +112,22 @@ class MinifyUnparser(_Unparser):
         else:
             self.traverse(node.body)
 
+    @staticmethod
+    def _within_function_node(function):
+        def wrapper(self: "MinifyUnparser", *args, **kwargs) -> None:
+            self.within_function = True
+            function(self, *args, **kwargs)
+            self.within_function = False
+
+        return wrapper
+
+    @_within_function_node
     def _function_helper(
         self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
     ) -> None:
         """Removes doc strings and type hints from function definitions"""
         remove_dangling_expressions(node)
+        remove_empty_annotations(node)
 
         self.maybe_newline()
         for decorator in node.decorator_list:
