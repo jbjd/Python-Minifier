@@ -1,6 +1,12 @@
 import pytest
 
+from personal_python_minifier.parser import MinifyUnparser
 from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
+
+
+@pytest.fixture
+def parser() -> MinifyUnparser:
+    return MinifyUnparser()
 
 
 @pytest.fixture
