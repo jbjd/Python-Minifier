@@ -36,7 +36,7 @@ def foo(bar, spam, eggs):
 """,
         """
 def foo(bar,spam,eggs):
-\ta = 1
+\ta=1
 \treturn a
 """.strip(),
     )
@@ -104,13 +104,7 @@ class Foo(object):
 
 @pytest.fixture
 def annotations_script() -> BeforeAndAfter:
-    return BeforeAndAfter(
-        """
-a: int
-b: int = 2
-""",
-        "b = 2",
-    )
+    return BeforeAndAfter("a: int;b: int = 2;b -= 1", "b=2\nb-=1")
 
 
 @pytest.fixture

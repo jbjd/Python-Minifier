@@ -34,6 +34,20 @@ class MinifyUnparser(_Unparser):
         text = tuple(map(self._update_text_to_write, text))
         self._source.extend(text)
 
+    @staticmethod
+    def _update_text_to_write(text: str) -> str:
+        """Give text to be written, replace some specific occurancces"""
+        match text:
+            case ", ":
+                return ","
+            case " = ":
+                return "="
+            case " := ":
+                return ":="
+
+            case _:
+                return text
+
     def visit_Pass(self, node: ast.Pass) -> None:
         same_line: bool = self._get_can_write_same_line(node)
         self.fill("pass", same_line=same_line)
@@ -63,6 +77,12 @@ class MinifyUnparser(_Unparser):
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
 
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self.fill()
+        self.traverse(node.target)
+        self.write(self.binop[node.op.__class__.__name__] + "=")
+        self.traverse(node.value)
+
     def visit_AnnAssign(self, node):
         """Only writes type annotations if necessary"""
         if not node.value and (not self.within_class or self.within_function):
@@ -75,7 +95,7 @@ class MinifyUnparser(_Unparser):
             self.traverse(node.target)
 
         if node.value:
-            self.write(" = ")
+            self.write("=")
             self.traverse(node.value)
         elif self.within_class and not self.within_function:
             self.write(": 'Any'")
@@ -107,16 +127,6 @@ class MinifyUnparser(_Unparser):
             self._set_can_write_same_line(node.body[0])
 
         super().visit_ClassDef(node)
-
-    @staticmethod
-    def _update_text_to_write(text: str) -> str:
-        """Give text to be written, replace some specific occurancces"""
-        match text:
-            case ", ":
-                return ","
-
-            case _:
-                return text
 
     def _write_docstring_and_traverse_body(self, node) -> None:
         if _ := self.get_raw_docstring(node):
