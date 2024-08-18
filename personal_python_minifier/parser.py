@@ -1,5 +1,5 @@
 import ast
-from ast import _Precedence, _Unparser  # type: ignore
+from ast import _Unparser  # type: ignore
 from typing import Iterable, Literal
 
 from personal_python_minifier.factories.node_factory import SameLineNodeFactory
@@ -34,8 +34,7 @@ class MinifyUnparser(_Unparser):
         text = tuple(map(self._update_text_to_write, text))
         self._source.extend(text)
 
-    @staticmethod
-    def _update_text_to_write(text: str) -> str:
+    def _update_text_to_write(self, text: str) -> str:
         """Give text to be written, replace some specific occurrences"""
         match text:
             case ", ":
@@ -58,6 +57,20 @@ class MinifyUnparser(_Unparser):
                 return ">"
             case " >= ":
                 return ">="
+            case " if ":
+                return self._needed_space_before_expr() + "if "
+            case " else ":
+                return self._needed_space_before_expr() + "else "
+            case " and ":
+                return self._needed_space_before_expr() + "and "
+            case " or ":
+                return self._needed_space_before_expr() + "or "
+            case " in ":
+                return self._needed_space_before_expr() + "in "
+            case " for ":
+                return self._needed_space_before_expr() + "for "
+            case " async for ":
+                return self._needed_space_before_expr() + "async for "
 
             case _:
                 return text
@@ -72,16 +85,6 @@ class MinifyUnparser(_Unparser):
         if node.value:
             self.write(" ")
             self.traverse(node.value)
-
-    def visit_IfExp(self, node: ast.IfExp) -> None:
-        with self.require_parens(_Precedence.TEST, node):
-            self.set_precedence(_Precedence.TEST.next(), node.body, node.test)
-            self.traverse(node.body)
-            self.write(self._needed_space_before_expr() + "if ")
-            self.traverse(node.test)
-            self.write(self._needed_space_before_expr() + "else ")
-            self.set_precedence(_Precedence.TEST, node.orelse)
-            self.traverse(node.orelse)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
@@ -224,8 +227,10 @@ class MinifyUnparser(_Unparser):
             self.traverse(node.body)
 
     def _needed_space_before_expr(self) -> bool:
+        if not self._source:
+            return ""
         most_recent_token: str = self._source[-1]
-        return "" if most_recent_token[-1] in ("'", '"', ")") else " "
+        return "" if most_recent_token[-1:] in ("'", '"', ")", "]", "}") else " "
 
     def _use_version_optimization(self, python_version: tuple[int, int]) -> bool:
         if self.target_python_version is None:
