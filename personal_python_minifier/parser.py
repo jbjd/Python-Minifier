@@ -44,6 +44,8 @@ class MinifyUnparser(_Unparser):
                 return "="
             case " := ":
                 return ":="
+            case ": ":
+                return ":"
 
             case _:
                 return text
