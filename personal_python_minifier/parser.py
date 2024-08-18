@@ -36,44 +36,35 @@ class MinifyUnparser(_Unparser):
 
     def _update_text_to_write(self, text: str) -> str:
         """Give text to be written, replace some specific occurrences"""
-        match text:
-            case ", ":
-                return ","
-            case " = ":
-                return "="
-            case " := ":
-                return ":="
-            case ": ":
-                return ":"
-            case " == ":
-                return "=="
-            case " != ":
-                return "!="
-            case " < ":
-                return "<"
-            case " <= ":
-                return "<="
-            case " > ":
-                return ">"
-            case " >= ":
-                return ">="
-            case " if ":
-                return self._needed_space_before_expr() + "if "
-            case " else ":
-                return self._needed_space_before_expr() + "else "
-            case " and ":
-                return self._needed_space_before_expr() + "and "
-            case " or ":
-                return self._needed_space_before_expr() + "or "
-            case " in ":
-                return self._needed_space_before_expr() + "in "
-            case " for ":
-                return self._needed_space_before_expr() + "for "
-            case " async for ":
-                return self._needed_space_before_expr() + "async for "
+        if text in (
+            ", ",
+            " = ",
+            " := ",
+            ": ",
+            " == ",
+            " != ",
+            " < ",
+            " <= ",
+            " > ",
+            " >= ",
+        ):
+            return text.strip()
 
-            case _:
-                return text
+        if text in (
+            " if ",
+            " else ",
+            " and ",
+            " or ",
+            " is ",
+            " is not ",
+            " in ",
+            " not in ",
+            " for ",
+            " async for ",
+        ):
+            return self._needed_space_before_expr() + text[1:]
+
+        return text
 
     def visit_Pass(self, node: ast.Pass) -> None:
         same_line: bool = self._get_can_write_same_line(node)
