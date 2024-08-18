@@ -108,6 +108,20 @@ def annotations_script() -> BeforeAndAfter:
 
 
 @pytest.fixture
+def one_line_if_script() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+a if True else b
+'a' if 'True' == 'False' else 'b'
+""",
+        """
+a if True else b
+'a'if 'True'=='False'else 'b'
+""".strip(),
+    )
+
+
+@pytest.fixture
 def futures_imports() -> BeforeAndAfterBasedOnVersion:
     many_futures_imports: str = """
 from __future__ import annotations
