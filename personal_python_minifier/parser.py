@@ -98,7 +98,7 @@ class MinifyUnparser(_Unparser):
 
         return result
 
-    def visit_Pass(self, node: ast.Pass) -> None:
+    def visit_Pass(self, node: ast.Pass | None = None) -> None:
         same_line: bool = self._get_can_write_same_line(node)
         self.fill("pass", same_line=same_line)
 
@@ -295,7 +295,7 @@ class MinifyUnparser(_Unparser):
         with self.block():
             self.traverse(node.body)
 
-    def _needed_space_before_expr(self) -> bool:
+    def _needed_space_before_expr(self) -> str:
         if not self._source:
             return ""
         most_recent_token: str = self._source[-1]
@@ -312,15 +312,21 @@ class MinifyUnparser(_Unparser):
         node.write_same_line = True  # type: ignore
 
     @staticmethod
-    def _get_can_write_same_line(node: ast.stmt) -> bool:
+    def _get_can_write_same_line(node: ast.stmt | None) -> bool:
         return getattr(node, "write_same_line", False)
+
+
+def parse_source_to_module_node(source: str) -> ast.Module:
+    parsed_source: ast.Module = ast.parse(source)
+    return ast.NodeTransformer().visit(parsed_source)
 
 
 def run_minify_parser(
     source: str, target_python_version: tuple[int, int] | None = None
 ) -> str:
-    parsed_source: ast.Module = ast.parse(source)
-    code_cleaner: MinifyUnparser = MinifyUnparser(target_python_version)
-    cleaned_source: str = code_cleaner.visit(ast.NodeTransformer().visit(parsed_source))
+    code_cleaner: MinifyUnparser = MinifyUnparser(
+        target_python_version=target_python_version
+    )
+    cleaned_source: str = code_cleaner.visit(parse_source_to_module_node(source))
 
     return cleaned_source
