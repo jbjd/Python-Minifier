@@ -1,11 +1,14 @@
 import ast
 from ast import _Unparser  # type: ignore
 from typing import Iterable, Literal
+import warnings
 
 from personal_python_minifier.factories.node_factory import SameLineNodeFactory
 from personal_python_minifier.futures import get_ignorable_futures
 from personal_python_minifier.parser_utils import (
+    CodeToSkip,
     add_pass_if_body_empty,
+    get_node_id_or_attr,
     ignore_base_classes,
     remove_dangling_expressions,
     remove_empty_annotations,
@@ -18,12 +21,38 @@ from personal_python_minifier.python_info import (
 
 class MinifyUnparser(_Unparser):
 
-    def __init__(self, target_python_version: tuple[int, int] | None = None) -> None:
+    __slots__ = (
+        "classes_to_skip",
+        "dict_keys_to_skip",
+        "functions_to_skip",
+        "vars_to_skip",
+        "module_name",
+        "target_python_version",
+        "within_class",
+        "within_function",
+    )
+
+    def __init__(
+        self,
+        module_name: str = "",
+        target_python_version: tuple[int, int] | None = None,
+        functions_to_skip: set[str] | None = None,
+        vars_to_skip: set[str] | None = None,
+        classes_to_skip: set[str] | None = None,
+        dict_keys_to_skip: set[str] | None = None,
+    ) -> None:
         super().__init__()
         self.target_python_version: tuple[int, int] | None = target_python_version
 
         self.within_class: bool = False
         self.within_function: bool = False
+
+        # TODO: Test the exclusions
+        self.module_name: str = module_name
+        self.classes_to_skip: CodeToSkip = CodeToSkip(classes_to_skip, "class")
+        self.dict_keys_to_skip: CodeToSkip = CodeToSkip(dict_keys_to_skip, "dict_key")
+        self.functions_to_skip: CodeToSkip = CodeToSkip(functions_to_skip, "function")
+        self.vars_to_skip: CodeToSkip = CodeToSkip(vars_to_skip, "var")
 
     def fill(self, text: str = "", same_line: bool = False) -> None:
         """Overrides super fill to use tabs over spaces"""
@@ -48,6 +77,27 @@ class MinifyUnparser(_Unparser):
 
         return text
 
+    def visit(self, node) -> str:
+        result: str = super().visit(node)
+
+        for code_excluder in [
+            self.functions_to_skip,
+            self.vars_to_skip,
+            self.classes_to_skip,
+            self.dict_keys_to_skip,
+        ]:
+            not_found_tokens: set[str] = code_excluder.get_not_found_tokens()
+            if not_found_tokens:
+                warnings.warn(
+                    (
+                        f"{self.module_name}: requested to skip "
+                        f"{code_excluder.token_type} {', '.join(not_found_tokens)}"
+                        " but was not found"
+                    )
+                )
+
+        return result
+
     def visit_Pass(self, node: ast.Pass) -> None:
         same_line: bool = self._get_can_write_same_line(node)
         self.fill("pass", same_line=same_line)
@@ -58,6 +108,17 @@ class MinifyUnparser(_Unparser):
         if node.value:
             self.write(" ")
             self.traverse(node.value)
+
+    def visit_Dict(self, node: ast.Dict) -> None:
+        if self.dict_keys_to_skip:
+            new_dict = {
+                k: v
+                for k, v in zip(node.keys, node.values)
+                if getattr(k, "value", "") not in self.dict_keys_to_skip
+            }
+            node.keys = list(new_dict.keys())
+            node.values = list(new_dict.values())
+        super().visit_Dict(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
@@ -91,8 +152,12 @@ class MinifyUnparser(_Unparser):
         self.write(self.binop[node.op.__class__.__name__] + "=")
         self.traverse(node.value)
 
-    def visit_AnnAssign(self, node):
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """Only writes type annotations if necessary"""
+        var_name: str = get_node_id_or_attr(node.target)
+        if var_name in self.vars_to_skip:
+            return
+
         if not node.value and (not self.within_class or self.within_function):
             return
 
@@ -108,6 +173,24 @@ class MinifyUnparser(_Unparser):
         elif self.within_class and not self.within_function:
             self.write(":'Any'")
 
+    def visit_Assign(self, node: ast.Assign) -> None:
+        if (
+            get_node_id_or_attr(getattr(node.value, "func", object))
+            in self.functions_to_skip
+        ):
+            self.visit_Pass()
+            return
+
+        # TODO: Currently if a.b.c.d only "c" and "d" are checked
+        var_name: str = get_node_id_or_attr(node.targets[0])
+        parent_var_name: str = get_node_id_or_attr(
+            getattr(node.targets[0], "value", object)
+        )
+        if var_name in self.vars_to_skip or parent_var_name in self.vars_to_skip:
+            return
+
+        super().visit_Assign(node)
+
     @staticmethod
     def _within_class_node(function):
         def wrapper(self: "MinifyUnparser", *args, **kwargs) -> None:
@@ -121,6 +204,9 @@ class MinifyUnparser(_Unparser):
     def visit_ClassDef(
         self, node: ast.ClassDef, base_classes_to_ignore: Iterable[str] | None = None
     ) -> None:
+        if node.name in self.classes_to_skip:
+            return
+
         remove_dangling_expressions(node)
 
         add_pass_if_body_empty(node)
@@ -138,16 +224,23 @@ class MinifyUnparser(_Unparser):
         self.fill("class " + node.name)
 
         with self.delimit_if("(", ")", condition=node.bases or node.keywords):
-            for index, base in enumerate(node.bases):
-                if index > 0:
-                    self.write(",")
-                self.traverse(base)
-            for keyword in enumerate(node.keywords):
-                if index > 0:
-                    self.write(",")
-                self.traverse(keyword)
+            self._traverse_comma_delimited_list(node.bases)
+            self._traverse_comma_delimited_list(node.keywords)
 
         self._traverse_body(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        function_name: str = get_node_id_or_attr(node.func)
+        if function_name in self.functions_to_skip:
+            self.visit_Pass()
+        else:
+            super().visit_Call(node)
+
+    def _traverse_comma_delimited_list(self, to_traverse: list) -> None:
+        for index, node in enumerate(to_traverse):
+            if index > 0:
+                self.write(",")
+            self.traverse(node)
 
     def _write_docstring_and_traverse_body(self, node) -> None:
         if _ := self.get_raw_docstring(node):
@@ -173,6 +266,9 @@ class MinifyUnparser(_Unparser):
         self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
     ) -> None:
         """Removes doc strings and type hints from function definitions"""
+        if node.name in self.functions_to_skip:
+            return
+
         remove_dangling_expressions(node)
         remove_empty_annotations(node)
 

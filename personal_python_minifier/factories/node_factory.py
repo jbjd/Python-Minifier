@@ -4,6 +4,8 @@ import ast
 class SameLineNodeFactory:
     """Creates ast nodes with write_same_line set to True"""
 
+    __slots__ = ()
+
     @staticmethod
     def create_pass() -> ast.Pass:
         node = ast.Pass()

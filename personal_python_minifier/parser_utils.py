@@ -2,6 +2,46 @@ import ast
 from typing import Iterable
 
 
+class CodeToSkip:
+
+    __slots__ = "_tokens_to_skip", "token_type"
+
+    def __init__(self, tokens_to_skip: set[str] | None, token_type: str) -> None:
+        # Count how often a token got skipped, init to 0
+        self._tokens_to_skip: dict[str, int] = self._set_to_dict_of_counts(
+            tokens_to_skip
+        )
+        self.token_type: str = token_type
+
+    def __contains__(self, key: str) -> bool:
+        """Returns if token is marked to skip and
+        increments internal counter when True is returned"""
+        try:
+            self._tokens_to_skip[key] += 1
+            return True
+        except KeyError:
+            return False
+
+    def get_not_found_tokens(self) -> set[str]:
+        return set(
+            token
+            for token, found_count in self._tokens_to_skip.items()
+            if found_count == 0
+        )
+
+    @staticmethod
+    def _set_to_dict_of_counts(input_set: set[str] | None) -> dict[str, int]:
+        if not input_set:
+            return {}
+
+        return {key: 0 for key in input_set}
+
+
+def get_node_id_or_attr(node) -> str:
+    """Gets id or attr which both can represent var names"""
+    return getattr(node, "id", "") or getattr(node, "attr", "")
+
+
 def remove_dangling_expressions(node: ast.ClassDef | ast.FunctionDef) -> None:
     """Removes constant daggling expression like doc strings"""
     node.body = [
