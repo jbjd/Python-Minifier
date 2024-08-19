@@ -10,6 +10,10 @@ from personal_python_minifier.parser_utils import (
     remove_dangling_expressions,
     remove_empty_annotations,
 )
+from personal_python_minifier.python_info import (
+    comparison_and_conjunctions,
+    operators_and_separators,
+)
 
 
 class MinifyUnparser(_Unparser):
@@ -36,55 +40,10 @@ class MinifyUnparser(_Unparser):
 
     def _update_text_to_write(self, text: str) -> str:
         """Give text to be written, replace some specific occurrences"""
-        if text in (
-            ", ",
-            " = ",
-            " += ",
-            " -= ",
-            " *= ",
-            " **= ",
-            " /= ",
-            " //= ",
-            " %= ",
-            " <<= ",
-            " >>= ",
-            " |= ",
-            " &= ",
-            " := ",
-            ": ",
-            " == ",
-            " != ",
-            " < ",
-            " <= ",
-            " > ",
-            " >= ",
-            " + ",
-            " - ",
-            " * ",
-            " ** ",
-            " / ",
-            " // ",
-            " % ",
-            " << ",
-            " >> ",
-            " | ",
-            " & ",
-            " ^ ",
-        ):
+        if text in operators_and_separators:
             return text.strip()
 
-        if text in (
-            " if ",
-            " else ",
-            " and ",
-            " or ",
-            " is ",
-            " is not ",
-            " in ",
-            " not in ",
-            " for ",
-            " async for ",
-        ):
+        if text in comparison_and_conjunctions:
             return self._needed_space_before_expr() + text[1:]
 
         return text
