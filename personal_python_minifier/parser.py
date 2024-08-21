@@ -175,8 +175,8 @@ class MinifyUnparser(_Unparser):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         if (
-            get_node_id_or_attr(getattr(node.value, "func", object))
-            in self.functions_to_skip
+            isinstance(node.value, ast.Call)
+            and get_node_id_or_attr(node.value.func) in self.functions_to_skip
         ):
             self.visit_Pass()
             return
