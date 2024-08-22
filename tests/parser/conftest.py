@@ -43,6 +43,24 @@ def foo(bar,spam,eggs):
 
 
 @pytest.fixture
+def many_returns_function() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+def foo(bar):
+    if bar:
+        return None
+    return 1
+""",
+        """
+def foo(bar):
+\tif bar:
+\t\treturn
+\treturn 1
+""".strip(),
+    )
+
+
+@pytest.fixture
 def dangling_constants_class() -> BeforeAndAfter:
     return BeforeAndAfter(
         """

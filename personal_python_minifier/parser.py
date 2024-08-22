@@ -11,6 +11,7 @@ from personal_python_minifier.parser_utils import (
     get_node_id_or_attr,
     ignore_base_classes,
     is_name_equals_main_node,
+    is_return_none,
     remove_dangling_expressions,
     remove_empty_annotations,
 )
@@ -114,7 +115,7 @@ class MinifyUnparser(_Unparser):
     def visit_Return(self, node: ast.Return) -> None:
         same_line: bool = self._get_can_write_same_line(node)
         self.fill("return", same_line=same_line)
-        if node.value:
+        if node.value and not is_return_none(node):
             self.write(" ")
             self.traverse(node.value)
 

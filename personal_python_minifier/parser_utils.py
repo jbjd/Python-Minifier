@@ -56,6 +56,10 @@ def is_name_equals_main_node(node: ast.expr) -> bool:
     )
 
 
+def is_return_none(node: ast.Return) -> bool:
+    return isinstance(node.value, ast.Constant) and node.value.value is None
+
+
 def remove_dangling_expressions(node: ast.ClassDef | ast.FunctionDef) -> None:
     """Removes constant daggling expression like doc strings"""
     node.body = [
