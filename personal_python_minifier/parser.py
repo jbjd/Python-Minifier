@@ -10,6 +10,7 @@ from personal_python_minifier.parser_utils import (
     add_pass_if_body_empty,
     get_node_id_or_attr,
     ignore_base_classes,
+    is_name_equals_main_node,
     remove_dangling_expressions,
     remove_empty_annotations,
 )
@@ -32,9 +33,11 @@ class MinifyUnparser(_Unparser):
         "within_function",
     )
 
+    # TODO: Make some kind of input class
     def __init__(
         self,
         module_name: str = "",
+        skip_name_equals_main: bool = False,
         target_python_version: tuple[int, int] | None = None,
         from_imports_to_skip: set[str] | None = None,
         functions_to_skip: set[str] | None = None,
@@ -47,6 +50,8 @@ class MinifyUnparser(_Unparser):
 
         self.within_class: bool = False
         self.within_function: bool = False
+
+        self.skip_name_equals_main: bool = skip_name_equals_main
 
         # TODO: Test the exclusions
         self.module_name: str = module_name
@@ -123,6 +128,14 @@ class MinifyUnparser(_Unparser):
             node.keys = list(new_dict.keys())
             node.values = list(new_dict.values())
         super().visit_Dict(node)
+
+    def visit_If(self, node: ast.If) -> None:
+        if self.skip_name_equals_main and is_name_equals_main_node(node.test):
+            if node.orelse:
+                self.traverse(node.orelse)
+            return
+
+        super().visit_If(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
@@ -332,11 +345,12 @@ def parse_source_to_module_node(source: str) -> ast.Module:
     return ast.NodeTransformer().visit(parsed_source)
 
 
+# TODO: Make some kind of input class to replace kwargs
 def run_minify_parser(
-    source: str, target_python_version: tuple[int, int] | None = None
+    source: str, target_python_version: tuple[int, int] | None = None, **kwargs
 ) -> str:
     code_cleaner: MinifyUnparser = MinifyUnparser(
-        target_python_version=target_python_version
+        target_python_version=target_python_version, **kwargs
     )
     cleaned_source: str = code_cleaner.visit(parse_source_to_module_node(source))
 

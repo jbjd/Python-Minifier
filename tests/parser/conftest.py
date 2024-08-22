@@ -133,3 +133,16 @@ from __future__ import with_statement
         many_futures_imports,
         {"3.7": "", None: many_futures_imports.strip()},
     )
+
+
+@pytest.fixture
+def name_equals_main_excludes() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+if __name__ == "__main__":
+    a = 2
+else:
+    a = 1
+""",
+        "a=1",
+    )

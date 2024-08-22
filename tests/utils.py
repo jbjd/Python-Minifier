@@ -31,10 +31,10 @@ def run_minifiyer_and_assert_correct_multiple_versions(
         assert expected == minified_function
 
 
-def run_minifiyer_and_assert_correct(source: BeforeAndAfter):
-    minified_function: str = run_minify_parser(source.before)
-    assert python_code_is_valid(minified_function)
-    assert source.after == minified_function
+def run_minifiyer_and_assert_correct(source: BeforeAndAfter, **kwargs):
+    minified_code: str = run_minify_parser(source.before, **kwargs)
+    assert python_code_is_valid(minified_code)
+    assert source.after == minified_code
 
 
 def python_code_is_valid(python_code: str) -> bool:

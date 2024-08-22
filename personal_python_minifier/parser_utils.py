@@ -45,6 +45,17 @@ def get_node_id_or_attr(node) -> str:
     return getattr(node, "id", "") or getattr(node, "attr", "")
 
 
+def is_name_equals_main_node(node: ast.expr) -> bool:
+    if not isinstance(node, ast.Compare):
+        return False
+
+    return (
+        getattr(node.left, "id", "") == "__name__"
+        and isinstance(node.ops[0], ast.Eq)
+        and getattr(node.comparators[0], "value", "") == "__main__"
+    )
+
+
 def remove_dangling_expressions(node: ast.ClassDef | ast.FunctionDef) -> None:
     """Removes constant daggling expression like doc strings"""
     node.body = [
