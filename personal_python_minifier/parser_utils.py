@@ -22,6 +22,9 @@ class CodeToSkip:
         except KeyError:
             return False
 
+    def empty(self) -> bool:
+        return not self._tokens_to_skip
+
     def get_not_found_tokens(self) -> set[str]:
         return set(
             token

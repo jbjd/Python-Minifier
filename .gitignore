@@ -4,5 +4,7 @@
 .vscode/
 __pycache__/
 
+*.ipynb
+
 build/
 *.egg-info

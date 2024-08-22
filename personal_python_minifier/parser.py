@@ -36,6 +36,7 @@ class MinifyUnparser(_Unparser):
         self,
         module_name: str = "",
         target_python_version: tuple[int, int] | None = None,
+        from_imports_to_skip: set[str] | None = None,
         functions_to_skip: set[str] | None = None,
         vars_to_skip: set[str] | None = None,
         classes_to_skip: set[str] | None = None,
@@ -51,6 +52,9 @@ class MinifyUnparser(_Unparser):
         self.module_name: str = module_name
         self.classes_to_skip: CodeToSkip = CodeToSkip(classes_to_skip, "class")
         self.dict_keys_to_skip: CodeToSkip = CodeToSkip(dict_keys_to_skip, "dict_key")
+        self.from_imports_to_skip: CodeToSkip = CodeToSkip(
+            from_imports_to_skip, "from import"
+        )
         self.functions_to_skip: CodeToSkip = CodeToSkip(functions_to_skip, "function")
         self.vars_to_skip: CodeToSkip = CodeToSkip(vars_to_skip, "var")
 
@@ -122,13 +126,20 @@ class MinifyUnparser(_Unparser):
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
+        if not self.from_imports_to_skip.empty():
+            node.names = [
+                alias
+                for alias in node.names
+                if alias.name not in self.from_imports_to_skip
+            ]
+
         if node.module == "__future__" and self.target_python_version is not None:
             ignoreable_futures: list[str] = get_ignorable_futures(
                 self.target_python_version
             )
-            node.names = list(
-                filter(lambda n: n.name not in ignoreable_futures, node.names)
-            )
+            node.names = [
+                alias for alias in node.names if alias.name not in ignoreable_futures
+            ]
 
         if not node.names:
             return
