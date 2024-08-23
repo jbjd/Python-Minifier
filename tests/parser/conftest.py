@@ -164,3 +164,17 @@ else:
 """,
         "a=1",
     )
+
+
+@pytest.fixture
+def assert_excludes() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+def abc(_):
+    assert True
+""",
+        """
+def abc(_):
+\tpass
+""".strip(),
+    )

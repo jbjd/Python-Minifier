@@ -38,6 +38,7 @@ class MinifyUnparser(_Unparser):
     def __init__(
         self,
         module_name: str = "",
+        skip_asserts: bool = False,
         skip_name_equals_main: bool = False,
         target_python_version: tuple[int, int] | None = None,
         from_imports_to_skip: set[str] | None = None,
@@ -51,6 +52,9 @@ class MinifyUnparser(_Unparser):
 
         self.within_class: bool = False
         self.within_function: bool = False
+
+        if skip_asserts:
+            self.visit_Assert = lambda _: self.visit_Pass()
 
         self.skip_name_equals_main: bool = skip_name_equals_main
 
