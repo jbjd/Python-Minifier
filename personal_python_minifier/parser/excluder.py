@@ -3,6 +3,7 @@ from typing import Iterable, Literal
 import warnings
 
 
+from personal_python_minifier.parser.config import ExcludeConfig
 from personal_python_minifier.parser.minifier import MinifyUnparser
 from personal_python_minifier.parser.utils import (
     CodeToSkip,
@@ -15,7 +16,7 @@ from personal_python_minifier.parser.utils import (
 class ExcludeUnparser(MinifyUnparser):
 
     __slots__ = (
-        "skip_name_equals_main",
+        "config",
         "classes_to_skip",
         "dict_keys_to_skip",
         "from_imports_to_skip",
@@ -28,8 +29,7 @@ class ExcludeUnparser(MinifyUnparser):
         self,
         module_name: str = "",
         target_python_version: tuple[int, int] | None = None,
-        skip_asserts: bool = False,
-        skip_name_equals_main: bool = False,
+        config: ExcludeConfig = ExcludeConfig(),
         from_imports_to_skip: set[str] | None = None,
         functions_to_skip: set[str] | None = None,
         vars_to_skip: set[str] | None = None,
@@ -38,10 +38,10 @@ class ExcludeUnparser(MinifyUnparser):
     ) -> None:
         super().__init__(module_name, target_python_version)
 
-        if skip_asserts:
+        if config.skip_asserts:
             self.visit_Assert = lambda _: self.visit_Pass()  # type: ignore
 
-        self.skip_name_equals_main: bool = skip_name_equals_main
+        self.config: ExcludeConfig = config
 
         # TODO: Test the exclusions
         self.classes_to_skip: CodeToSkip = CodeToSkip(classes_to_skip, "class")
@@ -85,7 +85,7 @@ class ExcludeUnparser(MinifyUnparser):
         super().visit_Dict(node)
 
     def visit_If(self, node: ast.If) -> None:
-        if self.skip_name_equals_main and is_name_equals_main_node(node.test):
+        if self.config.skip_name_equals_main and is_name_equals_main_node(node.test):
             if node.orelse:
                 self.traverse(node.orelse)
             return
