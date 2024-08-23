@@ -2,10 +2,11 @@ import ast
 from typing import NamedTuple
 
 from personal_python_minifier.parser import run_minify_parser
+from personal_python_minifier.parser.excluder import ExcludeUnparser
 
 
 class BeforeAndAfter(NamedTuple):
-    """Input and what is expected after minifiying it"""
+    """Input and output after minifiying it"""
 
     before: str
     after: str
@@ -24,15 +25,17 @@ def run_minifiyer_and_assert_correct_multiple_versions(
     for version, expected in source.after.items():
         if version is not None:
             version = _python_version_str_to_int_tuple(version)
-        minified_function: str = run_minify_parser(
-            source.before, target_python_version=version
+
+        version_specific_source = BeforeAndAfter(source.before, expected)
+
+        run_minifiyer_and_assert_correct(
+            version_specific_source, target_python_version=version
         )
-        assert python_code_is_valid(minified_function)
-        assert expected == minified_function
 
 
 def run_minifiyer_and_assert_correct(source: BeforeAndAfter, **kwargs):
-    minified_code: str = run_minify_parser(source.before, **kwargs)
+    parser = ExcludeUnparser(**kwargs)
+    minified_code: str = run_minify_parser(parser, source.before)
     assert python_code_is_valid(minified_code)
     assert source.after == minified_code
 
@@ -40,10 +43,9 @@ def run_minifiyer_and_assert_correct(source: BeforeAndAfter, **kwargs):
 def python_code_is_valid(python_code: str) -> bool:
     try:
         ast.parse(python_code)
+        return True
     except SyntaxError:
         return False
-
-    return True
 
 
 def _python_version_str_to_int_tuple(python_version: str) -> tuple[int, int]:

@@ -40,7 +40,7 @@ class CodeToSkip:
         return {key: 0 for key in input_set}
 
 
-def get_node_id_or_attr(node) -> str:
+def get_node_id_or_attr(node: object) -> str:
     """Gets id or attr which both can represent var names"""
     return getattr(node, "id", "") or getattr(node, "attr", "")
 

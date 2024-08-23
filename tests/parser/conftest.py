@@ -5,7 +5,7 @@ from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
 
 
 @pytest.fixture
-def parser() -> MinifyUnparser:
+def default_parser() -> MinifyUnparser:
     return MinifyUnparser()
 
 
