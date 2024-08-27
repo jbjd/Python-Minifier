@@ -1,8 +1,9 @@
 import ast
 from typing import NamedTuple
 
+from personal_python_minifier.factories.minifier_factory import ExclusionMinifierFactory
 from personal_python_minifier.parser import run_minify_parser
-from personal_python_minifier.parser.excluder import ExcludeUnparser
+from personal_python_minifier.parser.minifier import MinifyUnparser
 
 
 class BeforeAndAfter(NamedTuple):
@@ -34,8 +35,13 @@ def run_minifiyer_and_assert_correct_multiple_versions(
 
 
 def run_minifiyer_and_assert_correct(source: BeforeAndAfter, **kwargs):
-    parser = ExcludeUnparser(**kwargs)
-    minified_code: str = run_minify_parser(parser, source.before)
+    unparser: MinifyUnparser = MinifyUnparser()
+    if kwargs:
+        unparser = ExclusionMinifierFactory.create_minify_unparser_with_exclusions(
+            unparser, **kwargs
+        )
+
+    minified_code: str = run_minify_parser(unparser, source.before)
     assert python_code_is_valid(minified_code)
     assert source.after == minified_code
 

@@ -178,3 +178,17 @@ def abc(_):
 \tpass
 """.strip(),
     )
+
+
+@pytest.fixture
+def class_excludes() -> BeforeAndAfter:
+    return BeforeAndAfter(
+        """
+class A(ABC):
+    pass
+
+class B:
+    pass
+""",
+        "class A:pass",
+    )
