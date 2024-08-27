@@ -6,10 +6,15 @@ from personal_python_minifier.parser.config import (
     SectionsToSkipConfig,
 )
 from personal_python_minifier.parser.exclusion_decorators import (
-    visit_ClassDef_decorator,
-    visit_Dict_decorator,
-    visit_If_decorator,
-    visit_ImportFrom_decorator,
+    skip_func_def,
+    skip_func_assign,
+    skip_func_call,
+    skip_class,
+    skip_dict_keys,
+    skip_if_name_main,
+    skip_import_from,
+    skip_var_ann_assign,
+    skip_var_assign,
     visit_decorator,
 )
 from personal_python_minifier.parser.minifier import MinifyUnparser
@@ -22,7 +27,7 @@ class ExclusionMinifierFactory:
 
     __slots__ = ()
 
-    # TODO: Refactor
+    # TODO: Refactor and test
     @staticmethod
     def create_minify_unparser_with_exclusions(
         unparser: MinifyUnparser,
@@ -38,7 +43,7 @@ class ExclusionMinifierFactory:
         make_method = lambda func: MethodType(func, unparser)  # noqa E731
 
         if sections_config.skip_name_equals_main:
-            unparser.visit_If = make_method(visit_If_decorator(unparser.visit_If))
+            unparser.visit_If = make_method(skip_if_name_main(unparser.visit_If))
 
         if not tokens_config.has_code_to_skip():
             return unparser
@@ -51,11 +56,18 @@ class ExclusionMinifierFactory:
                 continue
 
             funcs_to_replace: list[tuple[str, Callable]] = {
-                "dict keys": [("visit_Dict", visit_Dict_decorator)],
-                "classes": [("visit_ClassDef", visit_ClassDef_decorator)],
-                "from imports": [("visit_ImportFrom", visit_ImportFrom_decorator)],
-                "functions": [],  # TODO
-                "vars": [],
+                "dict keys": [("visit_Dict", skip_dict_keys)],
+                "classes": [("visit_ClassDef", skip_class)],
+                "from imports": [("visit_ImportFrom", skip_import_from)],
+                "functions": [
+                    ("_function_helper", skip_func_def),
+                    ("visit_Assign", skip_func_assign),
+                    ("visit_Call", skip_func_call),
+                ],
+                "vars": [
+                    ("visit_AnnAssign", skip_var_ann_assign),
+                    ("visit_Assign", skip_var_assign),
+                ],
             }.get(tokens_to_skip.token_type)
 
             for function_name, new_function in funcs_to_replace:
