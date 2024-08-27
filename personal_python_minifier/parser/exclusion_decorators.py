@@ -2,7 +2,6 @@ import ast
 from typing import Iterable, Literal
 import warnings
 
-from build.lib.personal_python_minifier.parser.utils import CodeToSkip
 from personal_python_minifier.parser.minifier import MinifyUnparser
 from personal_python_minifier.parser.utils import (
     TokensToSkip,
@@ -58,13 +57,13 @@ def skip_if_name_main(visit_If):
                 self.traverse(node.orelse)
             return
 
-        visit_If(self, node)
+        visit_If(node)
 
     return wrapper
 
 
 def skip_import_from(visit_ImportFrom, from_imports_to_skip: TokensToSkip):
-    def wrapper(self, node: ast.ImportFrom) -> None:
+    def wrapper(self: MinifyUnparser, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
         node.names = [
             alias for alias in node.names if alias.name not in from_imports_to_skip
@@ -87,7 +86,7 @@ def skip_class(visit_ClassDef, classes_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_func_assign(visit_Assign, functions_to_skip: CodeToSkip):
+def skip_func_assign(visit_Assign, functions_to_skip: TokensToSkip):
     def wrapper(self, node: ast.Assign) -> None:
         if (
             isinstance(node.value, ast.Call)
@@ -101,8 +100,8 @@ def skip_func_assign(visit_Assign, functions_to_skip: CodeToSkip):
     return wrapper
 
 
-def skip_func_call(visit_Call, functions_to_skip: CodeToSkip):
-    def wrapper(self, node: ast.Call) -> None:
+def skip_func_call(visit_Call, functions_to_skip: TokensToSkip):
+    def wrapper(self: MinifyUnparser, node: ast.Call) -> None:
         function_name: str = get_node_id_or_attr(node.func)
         if function_name in functions_to_skip:
             self.visit_Pass()
@@ -112,9 +111,11 @@ def skip_func_call(visit_Call, functions_to_skip: CodeToSkip):
     return wrapper
 
 
-def skip_func_def(_function_helper, functions_to_skip: CodeToSkip):
+def skip_func_def(_function_helper, functions_to_skip: TokensToSkip):
     def wrapper(
-        self, node: ast.FunctionDef, fill_suffix: Literal["def", "async def"]
+        self: MinifyUnparser,
+        node: ast.FunctionDef,
+        fill_suffix: Literal["def", "async def"],
     ) -> None:
         if node.name in functions_to_skip:
             return
@@ -124,11 +125,12 @@ def skip_func_def(_function_helper, functions_to_skip: CodeToSkip):
     return wrapper
 
 
-def skip_var_ann_assign(visit_AnnAssign, vars_to_skip: CodeToSkip):
-    def wrapper(self, node: ast.AnnAssign) -> None:
+def skip_var_ann_assign(visit_AnnAssign, vars_to_skip: TokensToSkip):
+    def wrapper(self: MinifyUnparser, node: ast.AnnAssign) -> None:
         """Only writes type annotations if necessary"""
         var_name: str = get_node_id_or_attr(node.target)
         if var_name in vars_to_skip:
+            self.visit_Pass()
             return
 
         visit_AnnAssign(node)
@@ -136,8 +138,8 @@ def skip_var_ann_assign(visit_AnnAssign, vars_to_skip: CodeToSkip):
     return wrapper
 
 
-def skip_var_assign(visit_Assign, vars_to_skip: CodeToSkip):
-    def wrapper(self, node: ast.Assign) -> None:
+def skip_var_assign(visit_Assign, vars_to_skip: TokensToSkip):
+    def wrapper(self: MinifyUnparser, node: ast.Assign) -> None:
 
         # TODO: Currently if a.b.c.d only "c" and "d" are checked
         var_name: str = get_node_id_or_attr(node.targets[0])
@@ -145,6 +147,7 @@ def skip_var_assign(visit_Assign, vars_to_skip: CodeToSkip):
             getattr(node.targets[0], "value", object)
         )
         if var_name in vars_to_skip or parent_var_name in vars_to_skip:
+            self.visit_Pass()
             return
 
         visit_Assign(node)

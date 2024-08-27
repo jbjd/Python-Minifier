@@ -4,7 +4,14 @@ from personal_python_minifier.parser.utils import TokensToSkip
 
 class TokensToSkipConfig:
 
-    __slots__ = ("from_imports", "functions", "variables", "classes", "dict_keys")
+    __slots__ = (
+        "from_imports",
+        "functions",
+        "variables",
+        "classes",
+        "dict_keys",
+        "no_warn",
+    )
 
     TOKEN_ATTRS = ("from_imports", "functions", "variables", "classes", "dict_keys")
 
@@ -29,7 +36,7 @@ class TokensToSkipConfig:
             yield getattr(self, attr)
 
     def has_code_to_skip(self) -> bool:
-        return any(getattr(self, attr) for attr in self.__slots__)
+        return any(self)
 
 
 class SectionsToSkipConfig:
