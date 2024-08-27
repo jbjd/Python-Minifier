@@ -30,10 +30,10 @@ class ExclusionMinifierFactory:
     # TODO: Refactor and test
     @staticmethod
     def create_minify_unparser_with_exclusions(
-        unparser: MinifyUnparser,
+        unparser: type[MinifyUnparser],
         sections_config: SectionsToSkipConfig = SectionsToSkipConfig(),
         tokens_config: TokensToSkipConfig = TokensToSkipConfig(),
-    ) -> MinifyUnparser:
+    ) -> type[MinifyUnparser]:
         if (
             not tokens_config.has_code_to_skip()
             and not sections_config.has_code_to_skip()
@@ -64,7 +64,7 @@ class ExclusionMinifierFactory:
                     ("visit_Assign", skip_func_assign),
                     ("visit_Call", skip_func_call),
                 ],
-                "vars": [
+                "variables": [
                     ("visit_AnnAssign", skip_var_ann_assign),
                     ("visit_Assign", skip_var_assign),
                 ],

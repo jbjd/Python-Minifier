@@ -186,7 +186,7 @@ def class_excludes() -> BeforeAndAfter:
         """
 class A(ABC):
     pass
-    
+
 class B:
     pass
 """,

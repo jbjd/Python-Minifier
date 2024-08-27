@@ -4,24 +4,28 @@ from personal_python_minifier.parser.utils import TokensToSkip
 
 class TokensToSkipConfig:
 
-    __slots__ = ("from_imports", "functions", "vars", "classes", "dict_keys")
+    __slots__ = ("from_imports", "functions", "variables", "classes", "dict_keys")
+
+    TOKEN_ATTRS = ("from_imports", "functions", "variables", "classes", "dict_keys")
 
     def __init__(
         self,
         from_imports: set[str] | None = None,
         functions: set[str] | None = None,
-        vars: set[str] | None = None,
+        variables: set[str] | None = None,
         classes: set[str] | None = None,
         dict_keys: set[str] | None = None,
+        no_warn: set[str] | None = None,
     ):
         self.from_imports = TokensToSkip(from_imports, "from imports")
         self.functions = TokensToSkip(functions, "functions")
-        self.vars = TokensToSkip(vars, "vars")
+        self.variables = TokensToSkip(variables, "variables")
         self.classes = TokensToSkip(classes, "classes")
         self.dict_keys = TokensToSkip(dict_keys, "dict keys")
+        self.no_warn: set[str] = no_warn if no_warn is not None else {}
 
     def __iter__(self) -> Iterable[TokensToSkip]:
-        for attr in self.__slots__:
+        for attr in self.TOKEN_ATTRS:
             yield getattr(self, attr)
 
     def has_code_to_skip(self) -> bool:

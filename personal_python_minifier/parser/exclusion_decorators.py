@@ -12,12 +12,16 @@ from personal_python_minifier.parser.utils import (
 )
 
 
-def visit_decorator(visit, code_excluders: Iterable[TokensToSkip]):
+def visit_decorator(
+    visit, code_excluders: Iterable[TokensToSkip], no_warn: Iterable[str]
+):
     def wrapper(self: MinifyUnparser, node) -> str:
         result: str = visit(node)
 
         for code_excluder in code_excluders:
-            not_found_tokens: set[str] = code_excluder.get_not_found_tokens()
+            not_found_tokens: list[str] = [
+                t for t in code_excluder.get_not_found_tokens() if t not in no_warn
+            ]
             if not_found_tokens:
                 warnings.warn(
                     (
