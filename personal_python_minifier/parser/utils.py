@@ -2,7 +2,7 @@ import ast
 from typing import Iterable
 
 
-class CodeToSkip:
+class TokensToSkip:
 
     __slots__ = "_tokens_to_skip", "token_type"
 
@@ -12,6 +12,9 @@ class CodeToSkip:
             tokens_to_skip
         )
         self.token_type: str = token_type
+
+    def __bool__(self) -> bool:
+        return len(self._tokens_to_skip) > 0
 
     def __contains__(self, key: str) -> bool:
         """Returns if token is marked to skip and
