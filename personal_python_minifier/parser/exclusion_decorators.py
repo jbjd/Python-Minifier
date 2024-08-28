@@ -1,7 +1,8 @@
 import ast
-from typing import Callable, Iterable, Literal
+from typing import Callable, Literal
 import warnings
 
+from personal_python_minifier.parser.config import TokensToSkipConfig
 from personal_python_minifier.parser.minifier import MinifyUnparser
 from personal_python_minifier.parser.utils import (
     TokensToSkip,
@@ -11,21 +12,22 @@ from personal_python_minifier.parser.utils import (
 )
 
 
-def visit_decorator(
-    visit, code_excluders: Iterable[TokensToSkip], no_warn: Iterable[str]
-):
+def visit_decorator(visit, tokens_to_skip_config: TokensToSkipConfig):
     def wrapper(self: MinifyUnparser, node) -> str:
         result: str = visit(node)
+        no_warn_tokens: set[str] = tokens_to_skip_config.no_warn
 
-        for code_excluder in code_excluders:
+        for tokens_to_skip in tokens_to_skip_config:
             not_found_tokens: list[str] = [
-                t for t in code_excluder.get_not_found_tokens() if t not in no_warn
+                t
+                for t in tokens_to_skip.get_not_found_tokens()
+                if t not in no_warn_tokens
             ]
             if not_found_tokens:
                 warnings.warn(
                     (
                         f"{self.module_name}: requested to skip "
-                        f"{code_excluder.token_type} {', '.join(not_found_tokens)}"
+                        f"{tokens_to_skip.token_type} {', '.join(not_found_tokens)}"
                         " but was not found"
                     )
                 )

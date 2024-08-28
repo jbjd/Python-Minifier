@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterator
 
 from personal_python_minifier.parser.utils import TokensToSkip
 
@@ -40,14 +40,14 @@ class TokensToSkipConfig:
         self.classes = TokensToSkip(classes, "classes")
         self.dict_keys = TokensToSkip(dict_keys, "dict keys")
         self.decorators = TokensToSkip(decorators, "decorators")
-        self.no_warn: set[str] = no_warn if no_warn is not None else {}
+        self.no_warn: set[str] = no_warn if no_warn is not None else set()
 
-    def __iter__(self) -> Iterable[TokensToSkip]:
+    def __iter__(self) -> Iterator[TokensToSkip]:
         for attr in self.TOKEN_ATTRS:
             yield getattr(self, attr)
 
     def has_code_to_skip(self) -> bool:
-        return any(self)
+        return any(self)  # type: ignore
 
 
 class SectionsToSkipConfig:

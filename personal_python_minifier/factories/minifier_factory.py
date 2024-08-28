@@ -49,16 +49,14 @@ class ExclusionMinifierFactory:
         if not tokens_config.has_code_to_skip():
             return unparser
 
-        unparser.visit = make_method(
-            visit_decorator(unparser.visit, tokens_config, tokens_config.no_warn)
-        )
+        unparser.visit = make_method(visit_decorator(unparser.visit, tokens_config))
 
         tokens_to_skip: TokensToSkip
         for tokens_to_skip in tokens_config:
             if not tokens_to_skip:
                 continue
 
-            funcs_to_replace: list[tuple[str, Callable]] = {
+            funcs_to_replace: list[tuple[str, Callable]] = {  # type: ignore
                 "decorators": [("_write_decorators", skip_decorators)],
                 "dict keys": [("visit_Dict", skip_dict_keys)],
                 "classes": [("visit_ClassDef", skip_class)],
