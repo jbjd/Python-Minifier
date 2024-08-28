@@ -2,15 +2,16 @@ from types import MethodType
 from typing import Callable
 
 from personal_python_minifier.parser.config import (
-    TokensToSkipConfig,
     SectionsToSkipConfig,
+    TokensToSkipConfig,
 )
 from personal_python_minifier.parser.exclusion_decorators import (
-    skip_func_def,
+    skip_class,
+    skip_decorators,
+    skip_dict_keys,
     skip_func_assign,
     skip_func_call,
-    skip_class,
-    skip_dict_keys,
+    skip_func_def,
     skip_if_name_main,
     skip_import_from,
     skip_var_ann_assign,
@@ -58,6 +59,7 @@ class ExclusionMinifierFactory:
                 continue
 
             funcs_to_replace: list[tuple[str, Callable]] = {
+                "decorators": [("_write_decorators", skip_decorators)],
                 "dict keys": [("visit_Dict", skip_dict_keys)],
                 "classes": [("visit_ClassDef", skip_class)],
                 "from imports": [("visit_ImportFrom", skip_import_from)],

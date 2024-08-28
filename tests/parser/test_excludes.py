@@ -2,6 +2,7 @@ from personal_python_minifier.parser.config import (
     SectionsToSkipConfig,
     TokensToSkipConfig,
 )
+
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correct
 
 

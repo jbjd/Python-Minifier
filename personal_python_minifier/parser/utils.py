@@ -43,8 +43,10 @@ class TokensToSkip:
         return {key: 0 for key in input_set}
 
 
-def get_node_id_or_attr(node: object) -> str:
+def get_node_name(node: object) -> str:
     """Gets id or attr which both can represent var names"""
+    if isinstance(node, ast.Call):
+        node = node.func
     return getattr(node, "id", "") or getattr(node, "attr", "")
 
 
@@ -82,7 +84,9 @@ def remove_empty_annotations(node: ast.FunctionDef) -> None:
     ]
 
 
-def ignore_base_classes(node: ast.ClassDef, classes_to_ignore: Iterable[str]) -> None:
+def ignore_base_classes(
+    node: ast.ClassDef, classes_to_ignore: Iterable[str] | TokensToSkip
+) -> None:
     node.bases = [
         base for base in node.bases if getattr(base, "id", "") not in classes_to_ignore
     ]

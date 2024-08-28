@@ -1,11 +1,11 @@
 import ast
-from typing import Iterable, Literal
+from typing import Callable, Iterable, Literal
 import warnings
 
 from personal_python_minifier.parser.minifier import MinifyUnparser
 from personal_python_minifier.parser.utils import (
     TokensToSkip,
-    get_node_id_or_attr,
+    get_node_name,
     ignore_base_classes,
     is_name_equals_main_node,
 )
@@ -35,7 +35,7 @@ def visit_decorator(
     return wrapper
 
 
-def skip_dict_keys(visit_Dict, dict_keys_to_skip: TokensToSkip):
+def skip_dict_keys(visit_Dict: Callable, dict_keys_to_skip: TokensToSkip):
     def wrapper(self: MinifyUnparser, node: ast.Dict) -> None:
         new_dict = {
             k: v
@@ -50,7 +50,7 @@ def skip_dict_keys(visit_Dict, dict_keys_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_if_name_main(visit_If):
+def skip_if_name_main(visit_If: Callable):
     def wrapper(self: MinifyUnparser, node: ast.If) -> None:
         if is_name_equals_main_node(node.test):
             if node.orelse:
@@ -62,7 +62,7 @@ def skip_if_name_main(visit_If):
     return wrapper
 
 
-def skip_import_from(visit_ImportFrom, from_imports_to_skip: TokensToSkip):
+def skip_import_from(visit_ImportFrom: Callable, from_imports_to_skip: TokensToSkip):
     def wrapper(self: MinifyUnparser, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
         node.names = [
@@ -74,7 +74,7 @@ def skip_import_from(visit_ImportFrom, from_imports_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_class(visit_ClassDef, classes_to_skip: TokensToSkip):
+def skip_class(visit_ClassDef: Callable, classes_to_skip: TokensToSkip):
     def wrapper(self, node: ast.ClassDef) -> None:
         if node.name in classes_to_skip:
             return
@@ -86,11 +86,11 @@ def skip_class(visit_ClassDef, classes_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_func_assign(visit_Assign, functions_to_skip: TokensToSkip):
+def skip_func_assign(visit_Assign: Callable, functions_to_skip: TokensToSkip):
     def wrapper(self, node: ast.Assign) -> None:
         if (
             isinstance(node.value, ast.Call)
-            and get_node_id_or_attr(node.value.func) in functions_to_skip
+            and get_node_name(node.value.func) in functions_to_skip
         ):
             self.visit_Pass()
             return
@@ -100,9 +100,9 @@ def skip_func_assign(visit_Assign, functions_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_func_call(visit_Call, functions_to_skip: TokensToSkip):
+def skip_func_call(visit_Call: Callable, functions_to_skip: TokensToSkip):
     def wrapper(self: MinifyUnparser, node: ast.Call) -> None:
-        function_name: str = get_node_id_or_attr(node.func)
+        function_name: str = get_node_name(node.func)
         if function_name in functions_to_skip:
             self.visit_Pass()
         else:
@@ -111,7 +111,7 @@ def skip_func_call(visit_Call, functions_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_func_def(_function_helper, functions_to_skip: TokensToSkip):
+def skip_func_def(_function_helper: Callable, functions_to_skip: TokensToSkip):
     def wrapper(
         self: MinifyUnparser,
         node: ast.FunctionDef,
@@ -125,10 +125,10 @@ def skip_func_def(_function_helper, functions_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_var_ann_assign(visit_AnnAssign, vars_to_skip: TokensToSkip):
+def skip_var_ann_assign(visit_AnnAssign: Callable, vars_to_skip: TokensToSkip):
     def wrapper(self: MinifyUnparser, node: ast.AnnAssign) -> None:
         """Only writes type annotations if necessary"""
-        var_name: str = get_node_id_or_attr(node.target)
+        var_name: str = get_node_name(node.target)
         if var_name in vars_to_skip:
             self.visit_Pass()
             return
@@ -138,18 +138,27 @@ def skip_var_ann_assign(visit_AnnAssign, vars_to_skip: TokensToSkip):
     return wrapper
 
 
-def skip_var_assign(visit_Assign, vars_to_skip: TokensToSkip):
+def skip_var_assign(visit_Assign: Callable, vars_to_skip: TokensToSkip):
     def wrapper(self: MinifyUnparser, node: ast.Assign) -> None:
 
         # TODO: Currently if a.b.c.d only "c" and "d" are checked
-        var_name: str = get_node_id_or_attr(node.targets[0])
-        parent_var_name: str = get_node_id_or_attr(
-            getattr(node.targets[0], "value", object)
-        )
+        var_name: str = get_node_name(node.targets[0])
+        parent_var_name: str = get_node_name(getattr(node.targets[0], "value", object))
         if var_name in vars_to_skip or parent_var_name in vars_to_skip:
             self.visit_Pass()
             return
 
         visit_Assign(node)
+
+    return wrapper
+
+
+def skip_decorators(_write_decorators: Callable, decorators_to_skip: TokensToSkip):
+    def wrapper(self: MinifyUnparser, node: ast.ClassDef | ast.FunctionDef) -> None:
+        node.decorator_list = [
+            n for n in node.decorator_list if get_node_name(n) not in decorators_to_skip
+        ]
+
+        _write_decorators(node)
 
     return wrapper

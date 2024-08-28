@@ -1,8 +1,8 @@
 [project]
 authors = [
-  {name = "James Demetris"},
+          {name = "James Demetris"},
 ]
-name = "Personal_Python_Minifier"
-version="0.0.1"
-readme = "README.md"
+name            = "personal-python-minifier"
+version         = "0.0.2"
+readme          = "README.md"
 requires-python = ">= 3.10"

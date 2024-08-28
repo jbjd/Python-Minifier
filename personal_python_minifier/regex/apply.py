@@ -1,6 +1,6 @@
 import re
-from typing import Iterable
 import warnings
+from typing import Iterable
 
 from personal_python_minifier.regex import RegexReplacement
 
