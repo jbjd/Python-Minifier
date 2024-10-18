@@ -6,3 +6,6 @@ name            = "personal-python-minifier"
 version         = "0.0.2"
 readme          = "README.md"
 requires-python = ">= 3.10"
+dependencies = [
+  "autoflake==2.3.1"
+]
