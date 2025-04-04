@@ -1,9 +1,11 @@
 import ast
 from typing import NamedTuple
 
-from personal_python_minifier.factories.minifier_factory import ExclusionMinifierFactory
-from personal_python_minifier.parser import run_minify_parser
-from personal_python_minifier.parser.minifier import MinifyUnparser
+from personal_python_ast_optimizer.factories.minifier_factory import (
+    ExclusionMinifierFactory,
+)
+from personal_python_ast_optimizer.parser import run_minify_parser
+from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
 
 
 class BeforeAndAfter(NamedTuple):
@@ -34,8 +36,14 @@ def run_minifiyer_and_assert_correct_multiple_versions(
         )
 
 
-def run_minifiyer_and_assert_correct(source: BeforeAndAfter, **kwargs):
-    unparser: MinifyUnparser = MinifyUnparser()
+def run_minifiyer_and_assert_correct(
+    source: BeforeAndAfter,
+    target_python_version: tuple[int, int] | None = None,
+    **kwargs,
+):
+    unparser: MinifyUnparser = MinifyUnparser(
+        target_python_version=target_python_version
+    )
     if kwargs:
         unparser = ExclusionMinifierFactory.create_minify_unparser_with_exclusions(
             unparser, **kwargs

@@ -2,7 +2,7 @@ import re
 import warnings
 from typing import Iterable
 
-from personal_python_minifier.regex import RegexReplacement
+from personal_python_ast_optimizer.regex import RegexReplacement
 
 
 def apply_regex(

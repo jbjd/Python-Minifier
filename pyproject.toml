@@ -1,11 +1,11 @@
 [project]
 authors = [
-          {name = "James Demetris"},
+    {name = "James Demetris"},
 ]
-name            = "personal-python-minifier"
-version         = "0.0.2"
+name            = "personal-python-ast-optimizer"
+version         = "0.0.3"
 readme          = "README.md"
-requires-python = ">= 3.10"
+requires-python = ">=3.10"
 dependencies = [
   "autoflake==2.3.1"
 ]

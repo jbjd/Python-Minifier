@@ -2,9 +2,9 @@ import ast
 from typing import Callable, Literal
 import warnings
 
-from personal_python_minifier.parser.config import TokensToSkipConfig
-from personal_python_minifier.parser.minifier import MinifyUnparser
-from personal_python_minifier.parser.utils import (
+from personal_python_ast_optimizer.parser.config import TokensToSkipConfig
+from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
+from personal_python_ast_optimizer.parser.utils import (
     TokensToSkip,
     get_node_name,
     ignore_base_classes,

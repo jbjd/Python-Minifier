@@ -1,5 +1,5 @@
 import pytest
-from personal_python_minifier.parser import MinifyUnparser
+from personal_python_ast_optimizer.parser import MinifyUnparser
 
 from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
 
