@@ -1,12 +1,6 @@
 import pytest
-from personal_python_ast_optimizer.parser import MinifyUnparser
 
 from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
-
-
-@pytest.fixture
-def default_parser() -> MinifyUnparser:
-    return MinifyUnparser()
 
 
 @pytest.fixture
