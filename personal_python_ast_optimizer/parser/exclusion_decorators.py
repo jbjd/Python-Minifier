@@ -1,6 +1,6 @@
 import ast
-from typing import Callable, Literal
 import warnings
+from typing import Callable, Literal
 
 from personal_python_ast_optimizer.parser.config import TokensToSkipConfig
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
