@@ -15,12 +15,13 @@ class A:
     def __init__(test) -> None:
         foo = "bar"
         a = test.c = 456
-        test._a = 123
+        test._a: int = 123
         test._a.b.c = 789
         test._a, test.d, h = (1, 2, 3)
 
     def asdf(self) -> None:
-        self.b: int = 456
+        self.a = 123
+        self.b = 456
 
     @staticmethod
     def fasfasdf(c):

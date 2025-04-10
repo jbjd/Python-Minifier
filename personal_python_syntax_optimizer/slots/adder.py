@@ -2,6 +2,7 @@ import ast
 
 SLOTS_NAME: str = "__slots__"
 STATIC_METHOD_NAME: str = "staticmethod"
+PROPERTY_NAME: str = "property"
 TYPING_NAMEDTUPLE_NAME: str = "NamedTuple"
 COLLECTIONS_NAMEDTUPLE_NAME: str = "namedtuple"
 
@@ -40,6 +41,7 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> set[str]:
     If a class only assigns "self.foo = bar" then ["foo"] is returned"""
 
     self_assigns: set[str] = set()
+    class_vars: set[str] = set()
 
     for node in class_node.body:
         if (
@@ -52,6 +54,12 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> set[str]:
             or node.name == "__new__"
         ):
             continue
+
+        if any(
+            getattr(decorator, "id", "") == PROPERTY_NAME
+            for decorator in node.decorator_list
+        ):
+            class_vars.add(node.name)
 
         name_of_self: str = node.args.args[0].arg
 
@@ -84,7 +92,7 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> set[str]:
                 if target_name.id == name_of_self:
                     self_assigns.add(target.attr)
 
-    return self_assigns
+    return self_assigns.difference(class_vars)
 
 
 def _make_slots_node(self_assigns: list[str]) -> ast.Assign:
