@@ -1,5 +1,5 @@
-from personal_python_ast_optimizer.parser import parse_source_to_module_node
-from personal_python_ast_optimizer.parser.slots_adder import add_slots
+from personal_python_syntax_optimizer.parser import parse_source_to_module_node
+from personal_python_syntax_optimizer.parser.slots_adder import add_slots
 
 
 def test_slots_adder():

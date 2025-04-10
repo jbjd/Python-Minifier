@@ -1,6 +1,6 @@
 import ast
 
-from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
+from personal_python_syntax_optimizer.parser.minifier import MinifyUnparser
 
 
 def parse_source_to_module_node(source: str) -> ast.Module:

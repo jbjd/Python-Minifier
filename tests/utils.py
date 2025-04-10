@@ -1,11 +1,11 @@
 import ast
 from typing import NamedTuple
 
-from personal_python_ast_optimizer.factories.minifier_factory import (
+from personal_python_syntax_optimizer.factories.minifier_factory import (
     ExclusionMinifierFactory,
 )
-from personal_python_ast_optimizer.parser import run_minify_parser
-from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
+from personal_python_syntax_optimizer.parser import run_minify_parser
+from personal_python_syntax_optimizer.parser.minifier import MinifyUnparser
 
 
 class BeforeAndAfter(NamedTuple):

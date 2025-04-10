@@ -1,6 +1,6 @@
 from typing import Iterator
 
-from personal_python_ast_optimizer.parser.utils import TokensToSkip
+from personal_python_syntax_optimizer.parser.utils import TokensToSkip
 
 
 class TokensToSkipConfig:

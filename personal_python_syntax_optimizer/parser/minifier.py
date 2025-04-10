@@ -2,16 +2,16 @@ import ast
 from ast import _Unparser  # type: ignore
 from typing import Literal
 
-from personal_python_ast_optimizer.factories.node_factory import SameLineNodeFactory
-from personal_python_ast_optimizer.futures import get_ignorable_futures
-from personal_python_ast_optimizer.parser.utils import (
+from personal_python_syntax_optimizer.factories.node_factory import SameLineNodeFactory
+from personal_python_syntax_optimizer.futures import get_ignorable_futures
+from personal_python_syntax_optimizer.parser.utils import (
     add_pass_if_body_empty,
     ignore_base_classes,
     is_return_none,
     remove_dangling_expressions,
     remove_empty_annotations,
 )
-from personal_python_ast_optimizer.python_info import (
+from personal_python_syntax_optimizer.python_info import (
     comparison_and_conjunctions,
     operators_and_separators,
 )

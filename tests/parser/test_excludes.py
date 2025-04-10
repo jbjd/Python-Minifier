@@ -1,4 +1,4 @@
-from personal_python_ast_optimizer.parser.config import (
+from personal_python_syntax_optimizer.parser.config import (
     SectionsToSkipConfig,
     TokensToSkipConfig,
 )

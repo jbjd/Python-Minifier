@@ -2,7 +2,7 @@
 authors = [
     {name = "James Demetris"},
 ]
-name            = "personal-python-ast-optimizer"
+name            = "personal-python-syntax-optimizer"
 version         = "0.0.4"
 readme          = "README.md"
 requires-python = ">=3.10"

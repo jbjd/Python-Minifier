@@ -1,11 +1,11 @@
 from types import MethodType
 from typing import Callable
 
-from personal_python_ast_optimizer.parser.config import (
+from personal_python_syntax_optimizer.parser.config import (
     SectionsToSkipConfig,
     TokensToSkipConfig,
 )
-from personal_python_ast_optimizer.parser.exclusion_decorators import (
+from personal_python_syntax_optimizer.parser.exclusion_decorators import (
     skip_class,
     skip_decorators,
     skip_dict_keys,
@@ -18,8 +18,8 @@ from personal_python_ast_optimizer.parser.exclusion_decorators import (
     skip_var_assign,
     visit_decorator,
 )
-from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
-from personal_python_ast_optimizer.parser.utils import TokensToSkip
+from personal_python_syntax_optimizer.parser.minifier import MinifyUnparser
+from personal_python_syntax_optimizer.parser.utils import TokensToSkip
 
 
 class ExclusionMinifierFactory:
