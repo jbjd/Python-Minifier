@@ -12,9 +12,8 @@ def add_slots(module: ast.Module) -> ast.Module:
         if not isinstance(node, ast.ClassDef) or _is_named_tuple(node):
             continue
 
-        self_assigns: list[str] = _find_all_self_assigns(node)
+        self_assigns: list[str] = sorted(_find_all_self_assigns(node))
 
-        self_assigns.sort()
         slots_node = _make_slots_node(self_assigns)
 
         existing_slots_index: int = _find_index_of_existing_slots_assign(node)
@@ -35,12 +34,12 @@ def _is_named_tuple(class_node: ast.ClassDef) -> bool:
     )
 
 
-def _find_all_self_assigns(class_node: ast.ClassDef) -> list[str]:
+def _find_all_self_assigns(class_node: ast.ClassDef) -> set[str]:
     """Returns list of names of vars assigned to self in a class
 
     If a class only assigns "self.foo = bar" then ["foo"] is returned"""
 
-    self_assigns: list[str] = []
+    self_assigns: set[str] = set()
 
     for node in class_node.body:
         if (
@@ -71,9 +70,12 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> list[str]:
                 if isinstance(target, ast.Name):
                     continue
 
+                while isinstance(target.value, ast.Attribute):
+                    target = target.value
+
                 target_name: ast.Name = target.value
                 if target_name.id == name_of_self:
-                    self_assigns.append(target.attr)
+                    self_assigns.add(target.attr)
 
     return self_assigns
 

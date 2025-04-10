@@ -16,6 +16,7 @@ class A:
         foo = "bar"
         a = test.c = 456
         test.a = 123
+        test.a.b.c = 789
 
     def asdf(self) -> None:
         self.b: int = 456
