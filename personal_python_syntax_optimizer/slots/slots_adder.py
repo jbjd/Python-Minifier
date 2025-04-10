@@ -1,16 +1,19 @@
 import ast
 
 SLOTS_NAME: str = "__slots__"
-STATIC_METHOD_NAME = "staticmethod"
+STATIC_METHOD_NAME: str = "staticmethod"
+TYPING_NAMEDTUPLE_NAME: str = "NamedTuple"
+COLLECTIONS_NAMEDTUPLE_NAME: str = "namedtuple"
 
 
 def add_slots(module: ast.Module) -> ast.Module:
 
     for node in module.body:
-        if not isinstance(node, ast.ClassDef):
+        if not isinstance(node, ast.ClassDef) or _is_named_tuple(node):
             continue
 
         self_assigns: list[str] = _find_all_self_assigns(node)
+
         self_assigns.sort()
         slots_node = _make_slots_node(self_assigns)
 
@@ -21,6 +24,15 @@ def add_slots(module: ast.Module) -> ast.Module:
             node.body[existing_slots_index] = slots_node
 
     return module
+
+
+def _is_named_tuple(class_node: ast.ClassDef) -> bool:
+    """Returns bool of if class_node inherits from a named tuple varient"""
+    return any(
+        getattr(node, "id", "") == TYPING_NAMEDTUPLE_NAME
+        or (isinstance(node, ast.Call) and node.func.id == COLLECTIONS_NAMEDTUPLE_NAME)
+        for node in class_node.bases
+    )
 
 
 def _find_all_self_assigns(class_node: ast.ClassDef) -> list[str]:
@@ -37,11 +49,10 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> list[str]:
             or any(
                 decorator.id == STATIC_METHOD_NAME for decorator in node.decorator_list
             )
+            or node.name == "__new__"
         ):
             continue
 
-        # TODO: Handle staticmethod
-        # "self" could technically be whatever the first arg is named
         name_of_self: str = node.args.args[0].arg
 
         for child_node in node.body:
