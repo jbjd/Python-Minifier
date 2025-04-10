@@ -15,9 +15,9 @@ class A:
     def __init__(test) -> None:
         foo = "bar"
         a = test.c = 456
-        test.a = 123
-        test.a.b.c = 789
-        test.a, test.d, h = (1, 2, 3)
+        test._a = 123
+        test._a.b.c = 789
+        test._a, test.d, h = (1, 2, 3)
 
     def asdf(self) -> None:
         self.b: int = 456
@@ -25,12 +25,20 @@ class A:
     @staticmethod
     def fasfasdf(c):
         c.b = 1
+
+    @property
+    def a(self):
+        return self._a
+
+    @a.setter
+    def a(self, new_a):
+        self._a = new_a
 """
 
     node_with_slots = add_slots(parse_source_to_module_node(bad_slots))
 
     assert len(node_with_slots.body[0].body[0].value.dims) == 4
-    assert node_with_slots.body[0].body[0].value.dims[0].value == "a"
+    assert node_with_slots.body[0].body[0].value.dims[0].value == "_a"
     assert node_with_slots.body[0].body[0].value.dims[1].value == "b"
     assert node_with_slots.body[0].body[0].value.dims[2].value == "c"
     assert node_with_slots.body[0].body[0].value.dims[3].value == "d"

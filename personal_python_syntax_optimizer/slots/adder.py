@@ -46,7 +46,8 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> set[str]:
             not isinstance(node, ast.FunctionDef)
             or len(node.args.args) == 0
             or any(
-                decorator.id == STATIC_METHOD_NAME for decorator in node.decorator_list
+                getattr(decorator, "id", "") == STATIC_METHOD_NAME
+                for decorator in node.decorator_list
             )
             or node.name == "__new__"
         ):
