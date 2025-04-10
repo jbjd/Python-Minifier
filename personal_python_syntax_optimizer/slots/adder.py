@@ -60,16 +60,22 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> set[str]:
             ):
                 continue
 
-            targets: list[ast.Attribute | ast.Name] = (
+            targets: list[ast.Attribute | ast.Name | ast.Tuple] = (
                 [child_node.target]
                 if isinstance(child_node, ast.AnnAssign)
                 else child_node.targets
             )
 
+            possible_self_assigns: list[ast.Attribute] = []
             for target in targets:
-                if isinstance(target, ast.Name):
-                    continue
+                if isinstance(target, ast.Attribute):
+                    possible_self_assigns.append(target)
+                elif isinstance(target, ast.Tuple):
+                    for unpacked_target in target.dims:
+                        if isinstance(unpacked_target, ast.Attribute):
+                            possible_self_assigns.append(unpacked_target)
 
+            for target in possible_self_assigns:
                 while isinstance(target.value, ast.Attribute):
                     target = target.value
 
