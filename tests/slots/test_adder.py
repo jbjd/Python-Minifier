@@ -13,6 +13,8 @@ class A:
     __slots__ = ("asdf",)
 
     def __init__(test) -> None:
+        foo = "bar"
+        a = test.c = 456
         test.a = 123
 
     def asdf(self) -> None:
@@ -25,9 +27,10 @@ class A:
 
     node_with_slots = add_slots(parse_source_to_module_node(bad_slots))
 
+    assert len(node_with_slots.body[0].body[0].value.dims) == 3
     assert node_with_slots.body[0].body[0].value.dims[0].value == "a"
     assert node_with_slots.body[0].body[0].value.dims[1].value == "b"
-    assert len(node_with_slots.body[0].body[0].value.dims) == 2
+    assert node_with_slots.body[0].body[0].value.dims[2].value == "c"
 
 
 @pytest.mark.parametrize(

@@ -61,13 +61,16 @@ def _find_all_self_assigns(class_node: ast.ClassDef) -> list[str]:
             ):
                 continue
 
-            targets: list[ast.Attribute] = (
+            targets: list[ast.Attribute | ast.Name] = (
                 [child_node.target]
                 if isinstance(child_node, ast.AnnAssign)
                 else child_node.targets
             )
 
             for target in targets:
+                if isinstance(target, ast.Name):
+                    continue
+
                 target_name: ast.Name = target.value
                 if target_name.id == name_of_self:
                     self_assigns.append(target.attr)
