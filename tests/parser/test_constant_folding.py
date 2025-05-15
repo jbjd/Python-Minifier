@@ -47,9 +47,25 @@ FAVORITE_NUMBER=a=6
         (
             BeforeAndAfter(
                 """
-FAVORITE_NUMBER,a=6,7
+FAVORITE_NUMBER,a=4,5
 """,
-                "a=7",
+                "a=5",
+            )
+        ),
+        (
+            BeforeAndAfter(
+                """
+FAVORITE_NUMBER,a,*_=4,5,6,7,8
+""",
+                "a,*_=(5,6,7,8)",
+            )
+        ),
+        (
+            BeforeAndAfter(
+                """
+*_,FAVORITE_NUMBER,a=4,5,6,7,8
+""",
+                "*_,a=(4,6,7,8)",
             )
         ),
     ],

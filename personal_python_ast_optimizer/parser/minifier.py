@@ -5,6 +5,7 @@ from typing import Literal
 from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.utils import (
     add_pass_if_body_empty,
+    first_occurrence_of_type,
     ignore_base_classes,
     is_return_none,
     remove_dangling_expressions,
@@ -119,6 +120,39 @@ class MinifyUnparser(_Unparser):
             return
 
         node.targets = new_targets
+
+        if isinstance(node.targets[0], ast.Tuple) and isinstance(node.value, ast.Tuple):
+            target_elts = node.targets[0].elts
+            original_target_len = len(target_elts)
+
+            # Weird edge case: unpack contains a starred expression like *a,b = 1,2,3
+            # Need to use negative indexes if a bad index comes after one of these
+            starred_expr_index: int = first_occurrence_of_type(target_elts, ast.Starred)
+            bad_indexes: list[int] = [
+                (
+                    i
+                    if starred_expr_index == -1 or i < starred_expr_index
+                    else original_target_len - i - 1
+                )
+                for i in range(len(target_elts))
+                if self._is_assign_of_folded_constant(
+                    target_elts[i], node.value.elts[i]
+                )
+            ]
+
+            node.targets[0].elts = [
+                target for i, target in enumerate(target_elts) if i not in bad_indexes
+            ]
+            node.value.elts = [
+                target
+                for i, target in enumerate(node.value.elts)
+                if i not in bad_indexes
+            ]
+
+            if len(node.targets[0].elts) == 1:
+                node.targets = [node.targets[0].elts[0]]
+            if len(node.value.elts) == 1:
+                node.value = node.value.elts[0]
 
         super().visit_Assign(node)
 

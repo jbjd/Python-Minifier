@@ -95,3 +95,10 @@ def ignore_base_classes(
 def add_pass_if_body_empty(node: ast.ClassDef | ast.FunctionDef) -> None:
     if not node.body:
         node.body.append(ast.Pass())
+
+
+def first_occurrence_of_type(data: list, target_type) -> int:
+    for index, element in enumerate(data):
+        if isinstance(element, target_type):
+            return index
+    return -1
