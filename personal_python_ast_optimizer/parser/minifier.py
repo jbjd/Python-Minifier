@@ -5,6 +5,7 @@ from typing import Literal
 from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.utils import (
     add_pass_if_body_empty,
+    first_occurrence_of_type,
     ignore_base_classes,
     is_return_none,
     remove_dangling_expressions,
@@ -29,11 +30,15 @@ class MinifyUnparser(_Unparser):
         self,
         module_name: str = "",
         target_python_version: tuple[int, int] | None = None,
+        constant_vars_to_fold: dict[str, int | str] | None = None,
     ) -> None:
         self._source: list[str]
         super().__init__()
         self.module_name: str = module_name
         self.target_python_version: tuple[int, int] | None = target_python_version
+        self.constant_vars_to_fold: dict[str, int | str] = (
+            constant_vars_to_fold if constant_vars_to_fold is not None else {}
+        )
 
         self.within_class: bool = False
         self.within_function: bool = False
@@ -82,6 +87,13 @@ class MinifyUnparser(_Unparser):
                 alias for alias in node.names if alias.name not in ignoreable_futures
             ]
 
+        if self.constant_vars_to_fold:
+            node.names = [
+                alias
+                for alias in node.names
+                if alias.name not in self.constant_vars_to_fold
+            ]
+
         if not node.names:
             return
 
@@ -98,6 +110,54 @@ class MinifyUnparser(_Unparser):
 
         super().visit_arguments(node)
 
+    def visit_Assign(self, node: ast.Assign) -> None:
+        new_targets: list[ast.expr] = [
+            target
+            for target in node.targets
+            if not self._is_assign_of_folded_constant(target, node.value)
+        ]
+        if len(new_targets) == 0:
+            return
+
+        node.targets = new_targets
+
+        if isinstance(node.targets[0], ast.Tuple) and isinstance(node.value, ast.Tuple):
+            target_elts = node.targets[0].elts
+            original_target_len = len(target_elts)
+
+            # Weird edge case: unpack contains a starred expression like *a,b = 1,2,3
+            # Need to use negative indexes if a bad index comes after one of these
+            starred_expr_index: int = first_occurrence_of_type(target_elts, ast.Starred)
+            bad_indexes: list[int] = [
+                (
+                    i
+                    if starred_expr_index == -1 or i < starred_expr_index
+                    else original_target_len - i - 1
+                )
+                for i in range(len(target_elts))
+                if self._is_assign_of_folded_constant(
+                    target_elts[i], node.value.elts[i]
+                )
+            ]
+
+            node.targets[0].elts = [
+                target for i, target in enumerate(target_elts) if i not in bad_indexes
+            ]
+            node.value.elts = [
+                target
+                for i, target in enumerate(node.value.elts)
+                if i not in bad_indexes
+            ]
+
+            if len(node.targets[0].elts) == 0:
+                return
+            if len(node.targets[0].elts) == 1:
+                node.targets = [node.targets[0].elts[0]]
+            if len(node.value.elts) == 1:
+                node.value = node.value.elts[0]
+
+        super().visit_Assign(node)
+
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.fill()
         self.traverse(node.target)
@@ -107,6 +167,9 @@ class MinifyUnparser(_Unparser):
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """Only writes type annotations if necessary"""
         if not node.value and (not self.within_class or self.within_function):
+            return
+
+        if self._is_assign_of_folded_constant(node.target, node.value):
             return
 
         self.fill()
@@ -120,6 +183,24 @@ class MinifyUnparser(_Unparser):
             self.traverse(node.value)
         elif self.within_class and not self.within_function:
             self.write(":'Any'")
+
+    def visit_Name(self, node: ast.Name) -> None:
+        """Extends super's implementation by adding constant folding"""
+        if node.id in self.constant_vars_to_fold:
+            constant_value: str = self.constant_vars_to_fold[node.id]
+            self._write_constant(constant_value)
+        else:
+            super().visit_Name(node)
+
+    def _is_assign_of_folded_constant(self, target: ast.expr, value: ast.expr) -> bool:
+        """Returns if node is assignment of a value that we are folding. In this case,
+        there is no need to assign the value since its use"""
+
+        return (
+            isinstance(target, ast.Name)
+            and target.id in self.constant_vars_to_fold
+            and isinstance(value, ast.Constant)
+        )
 
     @staticmethod
     def _within_class_node(function):

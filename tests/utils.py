@@ -1,5 +1,4 @@
 import ast
-from typing import NamedTuple
 
 from personal_python_ast_optimizer.factories.minifier_factory import (
     ExclusionMinifierFactory,
@@ -8,18 +7,24 @@ from personal_python_ast_optimizer.parser import run_minify_parser
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
 
 
-class BeforeAndAfter(NamedTuple):
+class BeforeAndAfter:
     """Input and output after minifiying it"""
 
-    before: str
-    after: str
+    __slots__ = ("before", "after")
+
+    def __init__(self, before: str, after: str) -> None:
+        self.before: str = before
+        self.after: str = after
 
 
-class BeforeAndAfterBasedOnVersion(NamedTuple):
+class BeforeAndAfterBasedOnVersion:
     """Input and outputs it may have based on different python versions"""
 
-    before: str
-    after: dict[str]
+    __slots__ = ("before", "after")
+
+    def __init__(self, before: str, after: dict[str]) -> None:
+        self.before: str = before
+        self.after: dict[str] = after
 
 
 def run_minifiyer_and_assert_correct_multiple_versions(
@@ -39,10 +44,12 @@ def run_minifiyer_and_assert_correct_multiple_versions(
 def run_minifiyer_and_assert_correct(
     source: BeforeAndAfter,
     target_python_version: tuple[int, int] | None = None,
+    constant_vars_to_fold: dict[str, int | str] | None = None,
     **kwargs,
 ):
     unparser: MinifyUnparser = MinifyUnparser(
-        target_python_version=target_python_version
+        target_python_version=target_python_version,
+        constant_vars_to_fold=constant_vars_to_fold,
     )
     if kwargs:
         unparser = ExclusionMinifierFactory.create_minify_unparser_with_exclusions(
