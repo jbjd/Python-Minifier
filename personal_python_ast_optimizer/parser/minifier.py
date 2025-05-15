@@ -2,7 +2,6 @@ import ast
 from ast import _Unparser  # type: ignore
 from typing import Literal
 
-from personal_python_ast_optimizer.factories.node_factory import SameLineNodeFactory
 from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.utils import (
     add_pass_if_body_empty,
@@ -31,6 +30,7 @@ class MinifyUnparser(_Unparser):
         module_name: str = "",
         target_python_version: tuple[int, int] | None = None,
     ) -> None:
+        self._source: list[str]
         super().__init__()
         self.module_name: str = module_name
         self.target_python_version: tuple[int, int] | None = target_python_version
@@ -61,12 +61,12 @@ class MinifyUnparser(_Unparser):
 
         return text
 
-    def visit_Pass(self, node: ast.Pass | None = None) -> None:
-        same_line: bool = self._get_can_write_same_line(node)
+    def visit_Pass(self, _: ast.Pass | None = None) -> None:
+        same_line: bool = self._last_token_was_colon()
         self.fill("pass", same_line=same_line)
 
     def visit_Return(self, node: ast.Return) -> None:
-        same_line: bool = self._get_can_write_same_line(node)
+        same_line: bool = self._last_token_was_colon()
         self.fill("return", same_line=same_line)
         if node.value and not is_return_none(node):
             self.write(" ")
@@ -135,8 +135,6 @@ class MinifyUnparser(_Unparser):
         remove_dangling_expressions(node)
 
         add_pass_if_body_empty(node)
-        if len(node.body) == 1:
-            self._set_can_write_same_line(node.body[0])
 
         if self._use_version_optimization((3, 0)):
             ignore_base_classes(node, ["object"])
@@ -161,7 +159,7 @@ class MinifyUnparser(_Unparser):
         if _ := self.get_raw_docstring(node):
             # Skip writing doc string
             if len(node.body) == 1:
-                self.traverse(SameLineNodeFactory.create_pass())
+                self.fill("pass", same_line=True)
             else:
                 self.traverse(node.body[1:])
         else:
@@ -185,8 +183,8 @@ class MinifyUnparser(_Unparser):
         remove_empty_annotations(node)
 
         add_pass_if_body_empty(node)
-        if len(node.body) == 1:
-            self._set_can_write_same_line(node.body[0])
+        # if len(node.body) == 1:
+        #     self._set_can_write_same_line(node.body[0])
 
         self._write_decorators(node)
 
@@ -219,10 +217,5 @@ class MinifyUnparser(_Unparser):
 
         return self.target_python_version >= python_version
 
-    @staticmethod
-    def _set_can_write_same_line(node: ast.stmt) -> None:
-        node.write_same_line = True  # type: ignore
-
-    @staticmethod
-    def _get_can_write_same_line(node: ast.stmt | None) -> bool:
-        return getattr(node, "write_same_line", False)
+    def _last_token_was_colon(self):
+        return len(self._source) > 0 and self._source[-1] == ":"

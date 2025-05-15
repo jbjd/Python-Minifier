@@ -47,8 +47,7 @@ def foo(bar):
 """,
         """
 def foo(bar):
-\tif bar:
-\t\treturn
+\tif bar:return
 \treturn 1
 """.strip(),
     )
