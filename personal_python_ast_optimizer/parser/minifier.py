@@ -149,6 +149,8 @@ class MinifyUnparser(_Unparser):
                 if i not in bad_indexes
             ]
 
+            if len(node.targets[0].elts) == 0:
+                return
             if len(node.targets[0].elts) == 1:
                 node.targets = [node.targets[0].elts[0]]
             if len(node.value.elts) == 1:

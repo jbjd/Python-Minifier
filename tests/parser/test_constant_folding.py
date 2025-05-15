@@ -68,10 +68,18 @@ FAVORITE_NUMBER,a,*_=4,5,6,7,8
                 "*_,a=(4,6,7,8)",
             )
         ),
+        (
+            BeforeAndAfter(
+                """
+FAVORITE_NUMBER,TEST=4,5
+""",
+                "",
+            )
+        ),
     ],
 )
 def test_exclude_name_equals_main(before_and_after: BeforeAndAfter):
     run_minifiyer_and_assert_correct(
         before_and_after,
-        constant_vars_to_fold={"FAVORITE_NUMBER": 6},
+        constant_vars_to_fold={"FAVORITE_NUMBER": 6, "TEST": "test"},
     )
