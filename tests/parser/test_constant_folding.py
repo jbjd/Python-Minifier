@@ -39,14 +39,17 @@ a = FAVORITE_NUMBER
         (
             BeforeAndAfter(
                 """
-FAVORITE_NUMBER = 5
-
-a = FAVORITE_NUMBER
+FAVORITE_NUMBER=a=6
 """,
+                "a=6",
+            )
+        ),
+        (
+            BeforeAndAfter(
                 """
-FAVORITE_NUMBER = 5
-a=6
-""".strip(),
+FAVORITE_NUMBER,a=6,7
+""",
+                "a=7",
             )
         ),
     ],

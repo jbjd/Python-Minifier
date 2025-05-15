@@ -110,8 +110,15 @@ class MinifyUnparser(_Unparser):
         super().visit_arguments(node)
 
     def visit_Assign(self, node: ast.Assign) -> None:
-        if self._is_assign_of_folded_constant(node):
+        new_targets: list[ast.expr] = [
+            target
+            for target in node.targets
+            if not self._is_assign_of_folded_constant(target, node.value)
+        ]
+        if len(new_targets) == 0:
             return
+
+        node.targets = new_targets
 
         super().visit_Assign(node)
 
@@ -126,7 +133,7 @@ class MinifyUnparser(_Unparser):
         if not node.value and (not self.within_class or self.within_function):
             return
 
-        if self._is_assign_of_folded_constant(node):
+        if self._is_assign_of_folded_constant(node.target, node.value):
             return
 
         self.fill()
@@ -149,19 +156,14 @@ class MinifyUnparser(_Unparser):
         else:
             super().visit_Name(node)
 
-    def _is_assign_of_folded_constant(self, node: ast.Assign | ast.AnnAssign) -> bool:
+    def _is_assign_of_folded_constant(self, target: ast.expr, value: ast.expr) -> bool:
         """Returns if node is assignment of a value that we are folding. In this case,
         there is no need to assign the value since its use"""
-
-        # TODO: handle target list
-        target: ast.expr = (
-            node.target if isinstance(node, ast.AnnAssign) else node.targets[0]
-        )
 
         return (
             isinstance(target, ast.Name)
             and target.id in self.constant_vars_to_fold
-            and isinstance(node.value, ast.Constant)
+            and isinstance(value, ast.Constant)
         )
 
     @staticmethod
