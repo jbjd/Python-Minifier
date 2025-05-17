@@ -21,6 +21,7 @@ class MinifyUnparser(_Unparser):
 
     __slots__ = (
         "constant_vars_to_fold",
+        "is_last_node_in_body",
         "module_name",
         "target_python_version",
         "within_class",
@@ -41,6 +42,7 @@ class MinifyUnparser(_Unparser):
             constant_vars_to_fold if constant_vars_to_fold is not None else {}
         )
 
+        self.is_last_node_in_body: bool = False
         self.within_class: bool = False
         self.within_function: bool = False
 
@@ -67,12 +69,35 @@ class MinifyUnparser(_Unparser):
 
         return text
 
+    def visit_node(self, node, is_last_node_in_body: bool = False):
+        method = "visit_" + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+
+        previous_state: bool = self.is_last_node_in_body
+
+        self.is_last_node_in_body = is_last_node_in_body
+        try:
+            return visitor(node)
+        finally:
+            self.is_last_node_in_body = previous_state
+
+    def traverse(
+        self, node: list[ast.expr] | ast.AST, is_last_node_in_body: bool = False
+    ) -> None:
+        if isinstance(node, list):
+            last_index = len(node) - 1
+            for index, item in enumerate(node):
+                is_last_node_in_body: bool = index == last_index
+                self.visit_node(item, is_last_node_in_body)
+        else:
+            self.visit_node(node)
+
     def visit_Pass(self, _: ast.Pass | None = None) -> None:
-        same_line: bool = self._last_token_was_colon()
+        same_line: bool = self._can_write_same_line()
         self.fill("pass", same_line=same_line)
 
     def visit_Return(self, node: ast.Return) -> None:
-        same_line: bool = self._last_token_was_colon()
+        same_line: bool = self._can_write_same_line()
         self.fill("return", same_line=same_line)
         if node.value and not is_return_none(node):
             self.write(" ")
@@ -157,7 +182,12 @@ class MinifyUnparser(_Unparser):
             if len(node.value.elts) == 1:
                 node.value = node.value.elts[0]
 
-        super().visit_Assign(node)
+        self.fill(same_line=self._can_write_same_line())
+        for target in node.targets:
+            self.set_precedence(ast._Precedence.TUPLE, target)
+            self.traverse(target)
+            self.write("=")
+        self.traverse(node.value)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.fill()
@@ -267,8 +297,6 @@ class MinifyUnparser(_Unparser):
         remove_empty_annotations(node)
 
         add_pass_if_body_empty(node)
-        # if len(node.body) == 1:
-        #     self._set_can_write_same_line(node.body[0])
 
         self._write_decorators(node)
 
@@ -301,5 +329,9 @@ class MinifyUnparser(_Unparser):
 
         return self.target_python_version >= python_version
 
-    def _last_token_was_colon(self):
-        return len(self._source) > 0 and self._source[-1] == ":"
+    def _can_write_same_line(self):
+        return (
+            len(self._source) > 0
+            and self._source[-1] == ":"
+            and self.is_last_node_in_body
+        )
