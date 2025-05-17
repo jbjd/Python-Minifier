@@ -59,7 +59,11 @@ FAVORITE_NUMBER,a=4,5
                 """
 FAVORITE_NUMBER,a,*_=4,5,6,7,8
 """,
-                "a,*_=(5,6,7,8)" if sys.version_info > (3, 10) else "(a,*_)=(5,6,7,8)",
+                (
+                    "a,*_=(5,6,7,8)"
+                    if sys.version_info[:2] > (3, 11)
+                    else "(a,*_)=(5,6,7,8)"
+                ),
             )
         ),
         (
@@ -67,7 +71,11 @@ FAVORITE_NUMBER,a,*_=4,5,6,7,8
                 """
 *_,FAVORITE_NUMBER,a=4,5,6,7,8
 """,
-                "*_,a=(4,6,7,8)" if sys.version_info > (3, 10) else "(*_,a)=(4,6,7,8)",
+                (
+                    "*_,a=(4,6,7,8)"
+                    if sys.version_info[:2] > (3, 11)
+                    else "(*_,a)=(4,6,7,8)"
+                ),
             )
         ),
         (
