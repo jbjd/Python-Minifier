@@ -20,6 +20,7 @@ from personal_python_ast_optimizer.python_info import (
 class MinifyUnparser(_Unparser):
 
     __slots__ = (
+        "constant_vars_to_fold",
         "module_name",
         "target_python_version",
         "within_class",
@@ -32,7 +33,7 @@ class MinifyUnparser(_Unparser):
         target_python_version: tuple[int, int] | None = None,
         constant_vars_to_fold: dict[str, int | str] | None = None,
     ) -> None:
-        self._source: list[str]
+        self._source: list[str]  # type: ignore
         super().__init__()
         self.module_name: str = module_name
         self.target_python_version: tuple[int, int] | None = target_python_version
@@ -166,7 +167,7 @@ class MinifyUnparser(_Unparser):
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """Only writes type annotations if necessary"""
-        if not node.value and (not self.within_class or self.within_function):
+        if node.value is None and (not self.within_class or self.within_function):
             return
 
         if self._is_assign_of_folded_constant(node.target, node.value):
@@ -187,12 +188,14 @@ class MinifyUnparser(_Unparser):
     def visit_Name(self, node: ast.Name) -> None:
         """Extends super's implementation by adding constant folding"""
         if node.id in self.constant_vars_to_fold:
-            constant_value: str = self.constant_vars_to_fold[node.id]
+            constant_value = self.constant_vars_to_fold[node.id]
             self._write_constant(constant_value)
         else:
             super().visit_Name(node)
 
-    def _is_assign_of_folded_constant(self, target: ast.expr, value: ast.expr) -> bool:
+    def _is_assign_of_folded_constant(
+        self, target: ast.expr, value: ast.expr | None
+    ) -> bool:
         """Returns if node is assignment of a value that we are folding. In this case,
         there is no need to assign the value since its use"""
 

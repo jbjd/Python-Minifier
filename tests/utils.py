@@ -22,22 +22,25 @@ class BeforeAndAfterBasedOnVersion:
 
     __slots__ = ("before", "after")
 
-    def __init__(self, before: str, after: dict[str]) -> None:
+    def __init__(self, before: str, after: dict[str | None, str]) -> None:
         self.before: str = before
-        self.after: dict[str] = after
+        self.after: dict[str | None, str] = after
 
 
 def run_minifiyer_and_assert_correct_multiple_versions(
     source: BeforeAndAfterBasedOnVersion,
 ):
+    target_python_version: tuple[int, int] | None
     for version, expected in source.after.items():
         if version is not None:
-            version = _python_version_str_to_int_tuple(version)
+            target_python_version = _python_version_str_to_int_tuple(version)
+        else:
+            target_python_version = version
 
         version_specific_source = BeforeAndAfter(source.before, expected)
 
         run_minifiyer_and_assert_correct(
-            version_specific_source, target_python_version=version
+            version_specific_source, target_python_version=target_python_version
         )
 
 
@@ -70,4 +73,4 @@ def python_code_is_valid(python_code: str) -> bool:
 
 
 def _python_version_str_to_int_tuple(python_version: str) -> tuple[int, int]:
-    return tuple(int(i) for i in python_version.split("."))[:2]
+    return tuple(int(i) for i in python_version.split("."))[:2]  # type: ignore
