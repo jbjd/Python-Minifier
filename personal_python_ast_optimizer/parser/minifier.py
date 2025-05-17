@@ -69,7 +69,7 @@ class MinifyUnparser(_Unparser):
 
         return text
 
-    def visit_node(self, node, is_last_node_in_body: bool = False):
+    def visit_node(self, node: ast.AST, is_last_node_in_body: bool = False):
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
@@ -77,13 +77,11 @@ class MinifyUnparser(_Unparser):
 
         self.is_last_node_in_body = is_last_node_in_body
         try:
-            return visitor(node)
+            return visitor(node)  # type: ignore
         finally:
             self.is_last_node_in_body = previous_state
 
-    def traverse(
-        self, node: list[ast.expr] | ast.AST, is_last_node_in_body: bool = False
-    ) -> None:
+    def traverse(self, node: list[ast.stmt] | ast.AST) -> None:
         if isinstance(node, list):
             last_index = len(node) - 1
             for index, item in enumerate(node):
@@ -184,7 +182,7 @@ class MinifyUnparser(_Unparser):
 
         self.fill(same_line=self._can_write_same_line())
         for target in node.targets:
-            self.set_precedence(ast._Precedence.TUPLE, target)
+            self.set_precedence(ast._Precedence.TUPLE, target)  # type: ignore
             self.traverse(target)
             self.write("=")
         self.traverse(node.value)
