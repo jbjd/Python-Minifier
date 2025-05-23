@@ -4,7 +4,6 @@ import pytest
 
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correct
 
-
 _exclude_name_equals_main_cases = [
     (
         BeforeAndAfter(

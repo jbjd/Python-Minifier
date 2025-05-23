@@ -2,7 +2,6 @@ import pytest
 
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correct
 
-
 _assign_cases = [
     (
         BeforeAndAfter(
