@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import BeforeAndAfter, BeforeAndAfterBasedOnVersion
+from tests.utils import BeforeAndAfter
 
 
 @pytest.fixture
@@ -103,17 +103,6 @@ class SomeTuple:
 
 
 @pytest.fixture
-def ignorable_bases_class() -> BeforeAndAfterBasedOnVersion:
-    return BeforeAndAfterBasedOnVersion(
-        """
-class Foo(object):
-    pass
-""",
-        {"3.0": "class Foo:pass", None: "class Foo(object):pass"},
-    )
-
-
-@pytest.fixture
 def annotations_script() -> BeforeAndAfter:
     return BeforeAndAfter("a: int;b: int = 2;b -= 1", "b=2\nb-=1")
 
@@ -129,20 +118,6 @@ a if True else b
 a if True else b
 'a'if 'True'=='False'else 'b'
 """.strip(),
-    )
-
-
-@pytest.fixture
-def futures_imports() -> BeforeAndAfterBasedOnVersion:
-    many_futures_imports: str = """
-from __future__ import annotations
-from __future__ import generator_stop
-from __future__ import unicode_literals
-from __future__ import with_statement
-"""
-    return BeforeAndAfterBasedOnVersion(
-        many_futures_imports,
-        {"3.7": "", None: many_futures_imports.strip()},
     )
 
 
