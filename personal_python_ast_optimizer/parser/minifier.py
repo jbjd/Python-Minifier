@@ -69,7 +69,7 @@ class MinifyUnparser(_Unparser):
 
         return text
 
-    def visit_node(self, node: ast.AST, is_last_node_in_body: bool = False):
+    def visit_node(self, node: ast.AST, is_last_node_in_body: bool = False) -> None:
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
@@ -94,12 +94,32 @@ class MinifyUnparser(_Unparser):
         same_line: bool = self._can_write_same_line()
         self.fill("pass", same_line=same_line)
 
+    def visit_Continue(self, _: ast.Continue | None = None) -> None:
+        same_line: bool = self._can_write_same_line()
+        self.fill("continue", same_line=same_line)
+
     def visit_Return(self, node: ast.Return) -> None:
         same_line: bool = self._can_write_same_line()
         self.fill("return", same_line=same_line)
         if node.value and not is_return_none(node):
             self.write(" ")
             self.traverse(node.value)
+
+    def visit_Raise(self, node: ast.Raise) -> None:
+        same_line: bool = self._can_write_same_line()
+        self.fill("raise", same_line=same_line)
+
+        if not node.exc:
+            if node.cause:
+                raise ValueError("Node can't use cause without an exception.")
+            return
+
+        self.write(" ")
+        self.traverse(node.exc)
+
+        if node.cause:
+            self.write(" from ")
+            self.traverse(node.cause)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Skip unnecessary futures imports"""
@@ -327,7 +347,7 @@ class MinifyUnparser(_Unparser):
 
         return self.target_python_version >= python_version
 
-    def _can_write_same_line(self):
+    def _can_write_same_line(self) -> bool:
         return (
             len(self._source) > 0
             and self._source[-1] == ":"

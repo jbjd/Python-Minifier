@@ -6,5 +6,13 @@ from tests.utils import (
 )
 
 
-def test_class_ignorable_bases(ignorable_bases_class: BeforeAndAfterBasedOnVersion):
-    run_minifiyer_and_assert_correct_multiple_versions(ignorable_bases_class)
+def test_class_ignorable_bases():
+    before_and_after = BeforeAndAfterBasedOnVersion(
+        """
+class Foo(object):
+    pass
+""",
+        {"3.0": "class Foo:pass", None: "class Foo(object):pass"},
+    )
+
+    run_minifiyer_and_assert_correct_multiple_versions(before_and_after)
