@@ -65,13 +65,6 @@ def is_return_none(node: ast.Return) -> bool:
     return isinstance(node.value, ast.Constant) and node.value.value is None
 
 
-# def can_skip_paranthesis_in_raise(node: ast.Raise) -> bool:
-#     """Returns True when exception raised with empty paranthesis like:
-#         raise Exception()
-#     so caller knowns node can be written without them"""
-#     return isinstance(node.exc, ast.Call) and len(node.exc.args) == 0
-
-
 def remove_dangling_expressions(node: ast.ClassDef | ast.FunctionDef) -> None:
     """Removes constant daggling expression like doc strings"""
     node.body = [
