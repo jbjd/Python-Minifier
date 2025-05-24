@@ -110,6 +110,9 @@ class MinifyUnparser(_Unparser):
         else:
             self.visit_node(node)
 
+    def visit_Break(self, _: ast.Break) -> None:
+        self.fill("break", splitter=self._get_line_splitter())
+
     def visit_Pass(self, _: ast.Pass | None = None) -> None:
         self.fill("pass", splitter=self._get_line_splitter())
 
