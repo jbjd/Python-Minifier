@@ -6,7 +6,7 @@ on:
       body:
         type: string
         description: "Info on what changed in the release"
-        required: true
+        required: false
 
 jobs:
   tag-and-release:
@@ -27,12 +27,10 @@ jobs:
             echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: ${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
+          tag: v${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$tag" \
+            --repo="$GITHUB_REPOSITORY" --latest \
+            --title="$tag" --fail-on-no-commits
