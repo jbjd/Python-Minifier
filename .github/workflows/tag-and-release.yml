@@ -2,11 +2,6 @@ name: Tag And Release
 
 on:
   workflow_dispatch:
-    inputs:
-      body:
-        type: string
-        description: "Info on what changed in the release"
-        required: false
 
 permissions:
     contents: write
@@ -36,4 +31,5 @@ jobs:
         run: |
           gh release create "$tag" \
             --repo="$GITHUB_REPOSITORY" --latest \
-            --title="$tag" --fail-on-no-commits
+            --title="$tag" --fail-on-no-commits \
+            --generate-notes
