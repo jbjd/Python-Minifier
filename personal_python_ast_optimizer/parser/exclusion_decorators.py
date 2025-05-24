@@ -147,7 +147,8 @@ def skip_var_assign(visit_Assign: Callable, vars_to_skip: TokensToSkip):
         var_name: str = get_node_name(node.targets[0])
         parent_var_name: str = get_node_name(getattr(node.targets[0], "value", object))
         if var_name in vars_to_skip or parent_var_name in vars_to_skip:
-            self.visit_Pass()
+            if self._indent > 0:
+                self.visit_Pass()
             return
 
         visit_Assign(node)

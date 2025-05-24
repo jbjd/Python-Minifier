@@ -43,6 +43,7 @@ class MinifyUnparser(_Unparser):
         constant_vars_to_fold: dict[str, int | str] | None = None,
     ) -> None:
         self._source: list[str]  # type: ignore
+        self._indent: int  # type: ignore
         super().__init__()
         self.module_name: str = module_name
         self.target_python_version: tuple[int, int] | None = target_python_version
@@ -100,6 +101,9 @@ class MinifyUnparser(_Unparser):
             last_visited_node: ast.stmt | None = None
             last_index = len(node) - 1
             for index, item in enumerate(node):
+                # TODO: store last visited node in context and make function for
+                # can use semicolon. Use new var to check if writing pass is needed in
+                # exclusion
                 is_last_node_in_body: bool = index == last_index
                 can_use_semicolon: bool = isinstance(last_visited_node, ast.Assign)
                 result: SkipReason | None = self.visit_node(
