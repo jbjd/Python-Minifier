@@ -8,6 +8,9 @@ on:
         description: "Info on what changed in the release"
         required: false
 
+permissions:
+    contents: write
+
 jobs:
   tag-and-release:
     name: Create Release
