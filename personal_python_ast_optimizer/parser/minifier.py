@@ -1,5 +1,6 @@
 import ast
 from ast import _Unparser  # type: ignore
+from enum import Enum
 from typing import Literal
 
 from personal_python_ast_optimizer.futures import get_ignorable_futures
@@ -15,6 +16,12 @@ from personal_python_ast_optimizer.python_info import (
     comparison_and_conjunctions,
     operators_and_separators,
 )
+
+
+class SkipReason(Enum):
+    ALL_SUBNODES_REMOVED = 0
+    ANNOTATION = 1
+    FOLDED_CONSTANT = 2
 
 
 class MinifyUnparser(_Unparser):
@@ -42,17 +49,21 @@ class MinifyUnparser(_Unparser):
             constant_vars_to_fold if constant_vars_to_fold is not None else {}
         )
 
+        self.can_use_semicolon: bool = False
         self.is_last_node_in_body: bool = False
         self.within_class: bool = False
         self.within_function: bool = False
 
-    def fill(self, text: str = "", same_line: bool = False) -> None:
+    def fill(self, text: str = "", splitter: Literal["", "\n", ";"] = "\n") -> None:
         """Overrides super fill to use tabs over spaces"""
-        if same_line:
-            self.write(text)
-        else:
-            self.maybe_newline()
-            self.write("\t" * self._indent + text)
+        match splitter:
+            case "\n":
+                self.maybe_newline()
+                self.write("\t" * self._indent + text)
+            case "":
+                self.write(text)
+            case _:
+                self.write(f";{text}")
 
     def write(self, *text: str) -> None:
         """Write text, with some mapping replacements"""
@@ -69,45 +80,49 @@ class MinifyUnparser(_Unparser):
 
         return text
 
-    def visit_node(self, node: ast.AST, is_last_node_in_body: bool = False) -> None:
+    def visit_node(
+        self,
+        node: ast.AST,
+        is_last_node_in_body: bool = False,
+        can_use_semicolon: bool = False,
+    ) -> SkipReason | None:
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
-        previous_state: bool = self.is_last_node_in_body
-
         self.is_last_node_in_body = is_last_node_in_body
-        try:
-            return visitor(node)  # type: ignore
-        finally:
-            self.is_last_node_in_body = previous_state
+        self.can_use_semicolon = can_use_semicolon
+
+        return visitor(node)  # type: ignore
 
     def traverse(self, node: list[ast.stmt] | ast.AST) -> None:
         if isinstance(node, list):
+            last_visited_node: ast.stmt | None = None
             last_index = len(node) - 1
             for index, item in enumerate(node):
                 is_last_node_in_body: bool = index == last_index
-                self.visit_node(item, is_last_node_in_body)
+                can_use_semicolon: bool = isinstance(last_visited_node, ast.Assign)
+                result: SkipReason | None = self.visit_node(
+                    item, is_last_node_in_body, can_use_semicolon
+                )
+                if result is None:
+                    last_visited_node = item
         else:
             self.visit_node(node)
 
     def visit_Pass(self, _: ast.Pass | None = None) -> None:
-        same_line: bool = self._can_write_same_line()
-        self.fill("pass", same_line=same_line)
+        self.fill("pass", splitter=self._get_line_splitter())
 
     def visit_Continue(self, _: ast.Continue | None = None) -> None:
-        same_line: bool = self._can_write_same_line()
-        self.fill("continue", same_line=same_line)
+        self.fill("continue", splitter=self._get_line_splitter())
 
     def visit_Return(self, node: ast.Return) -> None:
-        same_line: bool = self._can_write_same_line()
-        self.fill("return", same_line=same_line)
+        self.fill("return", splitter=self._get_line_splitter())
         if node.value and not is_return_none(node):
             self.write(" ")
             self.traverse(node.value)
 
     def visit_Raise(self, node: ast.Raise) -> None:
-        same_line: bool = self._can_write_same_line()
-        self.fill("raise", same_line=same_line)
+        self.fill("raise", splitter=self._get_line_splitter())
 
         if not node.exc:
             if node.cause:
@@ -121,7 +136,7 @@ class MinifyUnparser(_Unparser):
             self.write(" from ")
             self.traverse(node.cause)
 
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> SkipReason | None:
         """Skip unnecessary futures imports"""
         if node.module == "__future__" and self.target_python_version is not None:
             ignoreable_futures: list[str] = get_ignorable_futures(
@@ -139,7 +154,7 @@ class MinifyUnparser(_Unparser):
             ]
 
         if not node.names:
-            return
+            return SkipReason.ALL_SUBNODES_REMOVED
 
         super().visit_ImportFrom(node)
 
@@ -154,14 +169,14 @@ class MinifyUnparser(_Unparser):
 
         super().visit_arguments(node)
 
-    def visit_Assign(self, node: ast.Assign) -> None:
+    def visit_Assign(self, node: ast.Assign) -> SkipReason | None:
         new_targets: list[ast.expr] = [
             target
             for target in node.targets
             if not self._is_assign_of_folded_constant(target, node.value)
         ]
         if len(new_targets) == 0:
-            return
+            return SkipReason.FOLDED_CONSTANT
 
         node.targets = new_targets
 
@@ -194,13 +209,13 @@ class MinifyUnparser(_Unparser):
             ]
 
             if len(node.targets[0].elts) == 0:
-                return
+                return SkipReason.FOLDED_CONSTANT
             if len(node.targets[0].elts) == 1:
                 node.targets = [node.targets[0].elts[0]]
             if len(node.value.elts) == 1:
                 node.value = node.value.elts[0]
 
-        self.fill(same_line=self._can_write_same_line())
+        self.fill(splitter=self._get_line_splitter())
         for target in node.targets:
             self.set_precedence(ast._Precedence.TUPLE, target)  # type: ignore
             self.traverse(target)
@@ -213,13 +228,13 @@ class MinifyUnparser(_Unparser):
         self.write(self.binop[node.op.__class__.__name__] + "=")
         self.traverse(node.value)
 
-    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> SkipReason | None:
         """Only writes type annotations if necessary"""
         if node.value is None and (not self.within_class or self.within_function):
-            return
+            return SkipReason.ANNOTATION
 
         if self._is_assign_of_folded_constant(node.target, node.value):
-            return
+            return SkipReason.FOLDED_CONSTANT
 
         self.fill()
         with self.delimit_if(
@@ -347,10 +362,17 @@ class MinifyUnparser(_Unparser):
 
         return self.target_python_version >= python_version
 
-    def _can_write_same_line(self) -> bool:
-        """If no new line needed. Currently only works for single line blocks"""
-        return (
+    def _get_line_splitter(self) -> Literal["", "\n", ";"]:
+        """Get character that starts the next line of code with the shortest
+        possible whitespace. Either a new line, semicolon, or nothing."""
+        if (
             len(self._source) > 0
             and self._source[-1] == ":"
             and self.is_last_node_in_body
-        )
+        ):
+            return ""
+
+        if self.can_use_semicolon:
+            return ";"
+
+        return "\n"
