@@ -20,7 +20,7 @@ if a > 6:
     b = 3
     c = 4
 """,
-            "if a>6:\n\tb=3\n\tc=4",
+            "if a>6:\n\tb=3;c=4",
         )
     ),
     (
@@ -30,6 +30,17 @@ if a > 6:
     b = 3
 """,
             "if a>6:b=3",
+        )
+    ),
+    (
+        BeforeAndAfter(
+            """
+if a > 6:
+    b = 3
+else:
+    c = 6
+""",
+            "if a>6:b=3\nelse:c=6",
         )
     ),
 ]
