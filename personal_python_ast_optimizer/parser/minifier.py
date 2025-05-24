@@ -27,6 +27,7 @@ class SkipReason(Enum):
 class MinifyUnparser(_Unparser):
 
     __slots__ = (
+        "can_use_semicolon",
         "constant_vars_to_fold",
         "is_last_node_in_body",
         "module_name",
@@ -112,7 +113,7 @@ class MinifyUnparser(_Unparser):
     def visit_Pass(self, _: ast.Pass | None = None) -> None:
         self.fill("pass", splitter=self._get_line_splitter())
 
-    def visit_Continue(self, _: ast.Continue | None = None) -> None:
+    def visit_Continue(self, _: ast.Continue) -> None:
         self.fill("continue", splitter=self._get_line_splitter())
 
     def visit_Return(self, node: ast.Return) -> None:
@@ -156,7 +157,7 @@ class MinifyUnparser(_Unparser):
         if not node.names:
             return SkipReason.ALL_SUBNODES_REMOVED
 
-        super().visit_ImportFrom(node)
+        return super().visit_ImportFrom(node)
 
     def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
@@ -222,6 +223,8 @@ class MinifyUnparser(_Unparser):
             self.write("=")
         self.traverse(node.value)
 
+        return None
+
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.fill()
         self.traverse(node.target)
@@ -247,6 +250,8 @@ class MinifyUnparser(_Unparser):
             self.traverse(node.value)
         elif self.within_class and not self.within_function:
             self.write(":'Any'")
+
+        return None
 
     def visit_Name(self, node: ast.Name) -> None:
         """Extends super's implementation by adding constant folding"""
@@ -306,7 +311,7 @@ class MinifyUnparser(_Unparser):
         if _ := self.get_raw_docstring(node):
             # Skip writing doc string
             if len(node.body) == 1:
-                self.fill("pass", same_line=True)
+                self.visit_Pass()
             else:
                 self.traverse(node.body[1:])
         else:
