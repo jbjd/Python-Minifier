@@ -348,6 +348,7 @@ class MinifyUnparser(_Unparser):
         return self.target_python_version >= python_version
 
     def _can_write_same_line(self) -> bool:
+        """If no new line needed. Currently only works for single line blocks"""
         return (
             len(self._source) > 0
             and self._source[-1] == ":"

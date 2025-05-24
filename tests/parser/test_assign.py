@@ -8,6 +8,16 @@ _assign_cases = [
             """
 if a > 6:
     b = 3
+c = 4
+""",
+            "if a>6:b=3\nc=4",
+        )
+    ),
+    (
+        BeforeAndAfter(
+            """
+if a > 6:
+    b = 3
     c = 4
 """,
             "if a>6:\n\tb=3\n\tc=4",
