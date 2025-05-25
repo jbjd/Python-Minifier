@@ -23,7 +23,7 @@ from personal_python_ast_optimizer.parser.utils import TokensToSkip
 
 
 class ExclusionMinifierFactory:
-    """Decorates a MinifierUnparser object with functions to exlcude bits of code"""
+    """Decorates a MinifierUnparser object with functions to exclude bits of code"""
 
     __slots__ = ()
 
