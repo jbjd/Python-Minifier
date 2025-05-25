@@ -3,45 +3,37 @@ import pytest
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correct
 
 _assign_cases = [
-    (
-        BeforeAndAfter(
-            """
+    BeforeAndAfter(
+        """
 if a > 6:
     b = 3
 c = 4
 """,
-            "if a>6:b=3\nc=4",
-        )
+        "if a>6:b=3\nc=4",
     ),
-    (
-        BeforeAndAfter(
-            """
+    BeforeAndAfter(
+        """
 if a > 6:
     b = 3
     c = 4
 """,
-            "if a>6:\n\tb=3;c=4",
-        )
+        "if a>6:\n\tb=3;c=4",
     ),
-    (
-        BeforeAndAfter(
-            """
+    BeforeAndAfter(
+        """
 if a > 6:
     b = 3
 """,
-            "if a>6:b=3",
-        )
+        "if a>6:b=3",
     ),
-    (
-        BeforeAndAfter(
-            """
+    BeforeAndAfter(
+        """
 if a > 6:
     b = 3
 else:
     c = 6
 """,
-            "if a>6:b=3\nelse:c=6",
-        )
+        "if a>6:b=3\nelse:c=6",
     ),
 ]
 

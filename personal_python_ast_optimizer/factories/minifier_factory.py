@@ -63,7 +63,7 @@ class ExclusionMinifierFactory:
                 "functions": [
                     ("_function_helper", skip_func_def),
                     ("visit_Assign", skip_func_assign),
-                    ("visit_Call", skip_func_call),
+                    ("visit_Expr", skip_func_call),
                 ],
                 "variables": [
                     ("visit_AnnAssign", skip_var_ann_assign),
