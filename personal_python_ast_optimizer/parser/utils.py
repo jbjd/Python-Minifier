@@ -1,6 +1,15 @@
 import ast
 from typing import Iterable
 
+_TOKEN_THAT_FIT_ON_SAME_LINE: list[str] = [
+    "Assign",
+    "Break",
+    "Continue",
+    "Pass",
+    "Raise",
+    "Return",
+]
+
 
 class TokensToSkip:
 
@@ -50,7 +59,7 @@ def get_node_name(node: object) -> str:
     return getattr(node, "id", "") or getattr(node, "attr", "")
 
 
-def is_name_equals_main_node(node: ast.expr) -> bool:
+def is_name_equals_main(node: ast.expr) -> bool:
     if not isinstance(node, ast.Compare):
         return False
 
@@ -102,3 +111,7 @@ def first_occurrence_of_type(data: list, target_type) -> int:
         if isinstance(element, target_type):
             return index
     return -1
+
+
+def fits_on_same_line(node: ast.stmt) -> bool:
+    return node.__class__.__name__ in _TOKEN_THAT_FIT_ON_SAME_LINE

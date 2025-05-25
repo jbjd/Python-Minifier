@@ -8,7 +8,7 @@ from personal_python_ast_optimizer.parser.utils import (
     TokensToSkip,
     get_node_name,
     ignore_base_classes,
-    is_name_equals_main_node,
+    is_name_equals_main,
 )
 
 
@@ -54,7 +54,7 @@ def skip_dict_keys(visit_Dict: Callable, dict_keys_to_skip: TokensToSkip):
 
 def skip_if_name_main(visit_If: Callable):
     def wrapper(self: MinifyUnparser, node: ast.If) -> SkipReason | None:
-        if is_name_equals_main_node(node.test):
+        if is_name_equals_main(node.test):
             if node.orelse:
                 self.traverse(node.orelse)
             return SkipReason.EXCLUDED
@@ -96,6 +96,7 @@ def skip_func_assign(visit_Assign: Callable, functions_to_skip: TokensToSkip):
         ):
             if _body_might_be_empty_without_pass(self):
                 self.visit_Pass()
+                return None
             return SkipReason.EXCLUDED
 
         return visit_Assign(node)
@@ -111,6 +112,7 @@ def skip_func_call(visit_Call: Callable, functions_to_skip: TokensToSkip):
         ):
             if _body_might_be_empty_without_pass(self):
                 self.visit_Pass()
+                return None
             return SkipReason.EXCLUDED
 
         return visit_Call(node)
@@ -127,6 +129,7 @@ def skip_func_def(_function_helper: Callable, functions_to_skip: TokensToSkip):
         if node.name in functions_to_skip:
             if _body_might_be_empty_without_pass(self):
                 self.visit_Pass()
+                return None
             return SkipReason.EXCLUDED
 
         return _function_helper(node, fill_suffix)
@@ -141,6 +144,7 @@ def skip_var_ann_assign(visit_AnnAssign: Callable, vars_to_skip: TokensToSkip):
         if var_name in vars_to_skip:
             if _body_might_be_empty_without_pass(self):
                 self.visit_Pass()
+                return None
             return SkipReason.EXCLUDED
 
         return visit_AnnAssign(node)
@@ -157,6 +161,7 @@ def skip_var_assign(visit_Assign: Callable, vars_to_skip: TokensToSkip):
         if var_name in vars_to_skip or parent_var_name in vars_to_skip:
             if _body_might_be_empty_without_pass(self):
                 self.visit_Pass()
+                return None
             return SkipReason.EXCLUDED
 
         return visit_Assign(node)

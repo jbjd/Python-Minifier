@@ -46,6 +46,6 @@ for i in range(6):
     raise Exception
     bar = 2
 """,
-        "for i in range(6):\n\tfoo=5;pass;continue;break;raise Exception;bar=2",
+        "for i in range(6):foo=5;pass;continue;break;raise Exception;bar=2",
     )
     run_minifiyer_and_assert_correct(before_and_after)

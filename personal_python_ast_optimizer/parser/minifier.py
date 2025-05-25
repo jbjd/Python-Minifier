@@ -7,6 +7,7 @@ from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.utils import (
     add_pass_if_body_empty,
     first_occurrence_of_type,
+    fits_on_same_line,
     ignore_base_classes,
     is_return_none,
     remove_dangling_expressions,
@@ -16,14 +17,6 @@ from personal_python_ast_optimizer.python_info import (
     comparison_and_conjunctions,
     operators_and_separators,
 )
-
-_TOKEN_THAT_FIT_ON_SAME_LINE: list[str] = [
-    "Assign",
-    "Break",
-    "Continue",
-    "Pass",
-    "Raise",
-]
 
 
 class SkipReason(Enum):
@@ -36,8 +29,8 @@ class SkipReason(Enum):
 class MinifyUnparser(_Unparser):
 
     __slots__ = (
+        "can_fit_on_same_line",
         "constant_vars_to_fold",
-        "is_last_node_in_body",
         "module_name",
         "previous_node_in_body",
         "target_python_version",
@@ -61,7 +54,7 @@ class MinifyUnparser(_Unparser):
         )
 
         self.previous_node_in_body: ast.stmt | None = None
-        self.is_last_node_in_body: bool = False
+        self.can_fit_on_same_line: bool = False
         self.within_class: bool = False
         self.within_function: bool = False
 
@@ -94,13 +87,13 @@ class MinifyUnparser(_Unparser):
     def visit_node(
         self,
         node: ast.AST,
-        is_last_node_in_body: bool = False,
+        can_write_same_line: bool = False,
         previous_node_in_body: ast.stmt | None = None,
     ) -> SkipReason | None:
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
-        self.is_last_node_in_body = is_last_node_in_body
+        self.can_fit_on_same_line = can_write_same_line
         self.previous_node_in_body = previous_node_in_body
 
         return visitor(node)  # type: ignore
@@ -108,13 +101,12 @@ class MinifyUnparser(_Unparser):
     def traverse(self, node: list[ast.stmt] | ast.AST) -> None:
         if isinstance(node, list):
             previous_node_in_body: ast.stmt | None = None
-            last_index = len(node) - 1
-            for index, item in enumerate(node):
-                is_last_node_in_body: bool = index == last_index
-                result: SkipReason | None = self.visit_node(
-                    item, is_last_node_in_body, previous_node_in_body
+            can_write_same_line: bool = all(fits_on_same_line(n) for n in node)
+            for item in node:
+                skip_reason: SkipReason | None = self.visit_node(
+                    item, can_write_same_line, previous_node_in_body
                 )
-                if result is None:
+                if skip_reason is None:
                     previous_node_in_body = item
         else:
             self.visit_node(node)
@@ -385,13 +377,12 @@ class MinifyUnparser(_Unparser):
         if (
             len(self._source) > 0
             and self._source[-1] == ":"
-            and self.is_last_node_in_body
+            and self.can_fit_on_same_line
         ):
             return ""
 
-        if (
-            self.previous_node_in_body.__class__.__name__
-            in _TOKEN_THAT_FIT_ON_SAME_LINE
+        if self.previous_node_in_body is not None and fits_on_same_line(
+            self.previous_node_in_body
         ):
             return ";"
 
