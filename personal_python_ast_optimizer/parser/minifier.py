@@ -22,15 +22,16 @@ class SkipReason(Enum):
     ALL_SUBNODES_REMOVED = 0
     ANNOTATION = 1
     FOLDED_CONSTANT = 2
+    EXCLUDED = 3
 
 
 class MinifyUnparser(_Unparser):
 
     __slots__ = (
-        "can_use_semicolon",
         "constant_vars_to_fold",
         "is_last_node_in_body",
         "module_name",
+        "previous_node_in_body",
         "target_python_version",
         "within_class",
         "within_function",
@@ -51,13 +52,13 @@ class MinifyUnparser(_Unparser):
             constant_vars_to_fold if constant_vars_to_fold is not None else {}
         )
 
-        self.can_use_semicolon: bool = False
+        self.previous_node_in_body: ast.stmt | None = None
         self.is_last_node_in_body: bool = False
         self.within_class: bool = False
         self.within_function: bool = False
 
     def fill(self, text: str = "", splitter: Literal["", "\n", ";"] = "\n") -> None:
-        """Overrides super fill to use tabs over spaces"""
+        """Overrides super fill to use tabs over spaces and different line splitters"""
         match splitter:
             case "\n":
                 self.maybe_newline()
@@ -86,13 +87,13 @@ class MinifyUnparser(_Unparser):
         self,
         node: ast.AST,
         is_last_node_in_body: bool = False,
-        can_use_semicolon: bool = False,
+        last_visited_node: ast.stmt | None = None,
     ) -> SkipReason | None:
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
         self.is_last_node_in_body = is_last_node_in_body
-        self.can_use_semicolon = can_use_semicolon
+        self.previous_node_in_body = last_visited_node
 
         return visitor(node)  # type: ignore
 
@@ -105,9 +106,8 @@ class MinifyUnparser(_Unparser):
                 # can use semicolon. Use new var to check if writing pass is needed in
                 # exclusion
                 is_last_node_in_body: bool = index == last_index
-                can_use_semicolon: bool = isinstance(last_visited_node, ast.Assign)
                 result: SkipReason | None = self.visit_node(
-                    item, is_last_node_in_body, can_use_semicolon
+                    item, is_last_node_in_body, last_visited_node
                 )
                 if result is None:
                     last_visited_node = item
@@ -384,7 +384,7 @@ class MinifyUnparser(_Unparser):
         ):
             return ""
 
-        if self.can_use_semicolon:
+        if isinstance(self.previous_node_in_body, ast.Assign):
             return ";"
 
         return "\n"
