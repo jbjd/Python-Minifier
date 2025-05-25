@@ -4,8 +4,9 @@ import autoflake
 def run_autoflake(source: str, remove_unused_imports: bool = False) -> str:
     """Runs autoflake
     remove_unused_imports: defaults to False since it can be destructive
-        Some module (foo) import what another module (bar) imported and this can remove
+        Say some module "foo" imports what another module "bar" imported.
         If module "bar" does not use the imports itself, autoflake will remove it
+        even though "foo" needs it.
     """
     return autoflake.fix_code(
         source,
