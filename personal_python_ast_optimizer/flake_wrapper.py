@@ -13,5 +13,4 @@ def run_autoflake(source: str, remove_unused_imports: bool = False) -> str:
         remove_duplicate_keys=True,
         remove_unused_variables=True,
         remove_rhs_for_unused_variables=True,
-        ignore_pass_statements=True,
     )
