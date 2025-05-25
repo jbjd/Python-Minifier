@@ -17,6 +17,14 @@ from personal_python_ast_optimizer.python_info import (
     operators_and_separators,
 )
 
+_TOKEN_THAT_FIT_ON_SAME_LINE: list[str] = [
+    "Assign",
+    "Break",
+    "Continue",
+    "Pass",
+    "Raise",
+]
+
 
 class SkipReason(Enum):
     ALL_SUBNODES_REMOVED = 0
@@ -87,30 +95,27 @@ class MinifyUnparser(_Unparser):
         self,
         node: ast.AST,
         is_last_node_in_body: bool = False,
-        last_visited_node: ast.stmt | None = None,
+        previous_node_in_body: ast.stmt | None = None,
     ) -> SkipReason | None:
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
         self.is_last_node_in_body = is_last_node_in_body
-        self.previous_node_in_body = last_visited_node
+        self.previous_node_in_body = previous_node_in_body
 
         return visitor(node)  # type: ignore
 
     def traverse(self, node: list[ast.stmt] | ast.AST) -> None:
         if isinstance(node, list):
-            last_visited_node: ast.stmt | None = None
+            previous_node_in_body: ast.stmt | None = None
             last_index = len(node) - 1
             for index, item in enumerate(node):
-                # TODO: store last visited node in context and make function for
-                # can use semicolon. Use new var to check if writing pass is needed in
-                # exclusion
                 is_last_node_in_body: bool = index == last_index
                 result: SkipReason | None = self.visit_node(
-                    item, is_last_node_in_body, last_visited_node
+                    item, is_last_node_in_body, previous_node_in_body
                 )
                 if result is None:
-                    last_visited_node = item
+                    previous_node_in_body = item
         else:
             self.visit_node(node)
 
@@ -384,7 +389,10 @@ class MinifyUnparser(_Unparser):
         ):
             return ""
 
-        if isinstance(self.previous_node_in_body, ast.Assign):
+        if (
+            self.previous_node_in_body.__class__.__name__
+            in _TOKEN_THAT_FIT_ON_SAME_LINE
+        ):
             return ";"
 
         return "\n"

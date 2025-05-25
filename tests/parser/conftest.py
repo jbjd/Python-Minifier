@@ -103,25 +103,6 @@ class SomeTuple:
 
 
 @pytest.fixture
-def annotations_script() -> BeforeAndAfter:
-    return BeforeAndAfter("a: int;b: int = 2;b -= 1", "b=2\nb-=1")
-
-
-@pytest.fixture
-def one_line_if_script() -> BeforeAndAfter:
-    return BeforeAndAfter(
-        """
-a if True else b
-'a' if 'True' == 'False' else 'b'
-""",
-        """
-a if True else b
-'a'if 'True'=='False'else 'b'
-""".strip(),
-    )
-
-
-@pytest.fixture
 def name_equals_main_excludes() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
