@@ -1,9 +1,11 @@
 import ast
 
-from personal_python_ast_optimizer.factories.minifier_factory import (
-    ExclusionMinifierFactory,
-)
+
 from personal_python_ast_optimizer.parser import run_minify_parser
+from personal_python_ast_optimizer.parser.config import (
+    SectionsToSkipConfig,
+    TokensToSkipConfig,
+)
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
 
 
@@ -48,18 +50,17 @@ def run_minifiyer_and_assert_correct(
     source: BeforeAndAfter,
     target_python_version: tuple[int, int] | None = None,
     constant_vars_to_fold: dict[str, int | str] | None = None,
-    **kwargs,
+    sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
+    tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
 ):
     unparser: MinifyUnparser = MinifyUnparser(
         target_python_version=target_python_version,
         constant_vars_to_fold=constant_vars_to_fold,
     )
-    if kwargs:
-        unparser = ExclusionMinifierFactory.create_minify_unparser_with_exclusions(
-            unparser, **kwargs
-        )
 
-    minified_code: str = run_minify_parser(unparser, source.before)
+    minified_code: str = run_minify_parser(
+        unparser, source.before, sections_to_skip_config, tokens_to_skip_config
+    )
     assert python_code_is_valid(minified_code)
     assert source.after == minified_code
 

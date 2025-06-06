@@ -84,11 +84,20 @@ def remove_empty_annotations(node: ast.FunctionDef) -> None:
     ]
 
 
-def ignore_base_classes(
+def skip_base_classes(
     node: ast.ClassDef, classes_to_ignore: Iterable[str] | TokensToSkip
 ) -> None:
     node.bases = [
         base for base in node.bases if getattr(base, "id", "") not in classes_to_ignore
+    ]
+
+
+def skip_decorators(
+    node: ast.ClassDef | ast.FunctionDef,
+    decorators_to_ignore: Iterable[str] | TokensToSkip,
+) -> None:
+    node.decorator_list = [
+        n for n in node.decorator_list if get_node_name(n) not in decorators_to_ignore
     ]
 
 

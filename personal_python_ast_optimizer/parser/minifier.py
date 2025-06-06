@@ -7,7 +7,7 @@ from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.utils import (
     add_pass_if_body_empty,
     first_occurrence_of_type,
-    ignore_base_classes,
+    skip_base_classes,
     is_return_none,
     remove_dangling_expressions,
     remove_empty_annotations,
@@ -296,7 +296,7 @@ class MinifyUnparser(_Unparser):
         add_pass_if_body_empty(node)
 
         if self._use_version_optimization((3, 0)):
-            ignore_base_classes(node, ["object"])
+            skip_base_classes(node, ["object"])
 
         self._write_decorators(node)
 
