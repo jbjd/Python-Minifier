@@ -78,7 +78,7 @@ def _should_skip_node(
     if isinstance(node, ast.Expr):
         return (
             isinstance(node.value, ast.Call)
-            and node.name in tokens_to_skip_config.functions
+            and get_node_name(node.value.func) in tokens_to_skip_config.functions
         )
 
     return False
