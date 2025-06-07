@@ -1,4 +1,6 @@
 import ast
+from typing import Literal
+
 from personal_python_ast_optimizer.parser.config import (
     SectionsToSkipConfig,
     TokensToSkipConfig,
@@ -22,26 +24,59 @@ def skip_sections_of_module(
     ):
         return
 
+    depth: int = 0
     ast_stack: list[ast.AST] = [source]
 
     while ast_stack:
-        current_ast_node = ast_stack.pop()
-        new_node_body = []
+        current_node = ast_stack.pop()
+        _check_node_body(
+            current_node,
+            "body",
+            depth,
+            ast_stack,
+            sections_to_skip_config,
+            tokens_to_skip_config,
+        )
 
-        for child_node in current_ast_node.body:
-            if not _should_skip_node(
-                child_node, sections_to_skip_config, tokens_to_skip_config
-            ):
-                if _remove_skippable_tokens(child_node, tokens_to_skip_config):
-                    new_node_body.append(child_node)
-                    if hasattr(child_node, "body"):
-                        ast_stack.append(child_node)
+        if isinstance(current_node, ast.If):
+            _check_node_body(
+                current_node,
+                "orelse",
+                depth,
+                ast_stack,
+                sections_to_skip_config,
+                tokens_to_skip_config,
+            )
 
-        # TODO: Handle this in a better way
-        if not new_node_body and current_ast_node is source:
-            current_ast_node.body = []
-        else:
-            current_ast_node.body = new_node_body if new_node_body else [ast.Pass()]
+        depth += 1
+
+
+def _check_node_body(
+    node: ast.AST,
+    body_attr: Literal["body", "orelse"],
+    depth: int,
+    ast_stack: list[ast.AST],
+    sections_to_skip_config: SectionsToSkipConfig,
+    tokens_to_skip_config: TokensToSkipConfig,
+) -> None:
+    new_node_body = []
+
+    for child_node in getattr(node, body_attr):
+        if not _should_skip_node(
+            child_node, sections_to_skip_config, tokens_to_skip_config
+        ):
+            if _remove_skippable_tokens(child_node, tokens_to_skip_config):
+                new_node_body.append(child_node)
+                if hasattr(child_node, "body"):
+                    ast_stack.append(child_node)
+
+    # TODO: Handle this in a better way
+    if not new_node_body and (depth == 0 or body_attr == "orelse"):
+        setattr(node, body_attr, [])
+    else:
+        if not new_node_body:
+            new_node_body = [ast.Pass()]
+        setattr(node, body_attr, new_node_body)
 
 
 def _should_skip_node(

@@ -61,7 +61,7 @@ def bar():
     test = 1
     foo = 2
 """,
-        "def bar():\n\ttest=1",
+        "def bar():test=1",
     ),
     BeforeAndAfter(
         """
@@ -70,7 +70,7 @@ def bar():
     test = 1
 """,
         # TODO: This could be more optimal
-        "def bar():\n\tpass\n\ttest=1",
+        "def bar():test=1",
     ),
 ]
 
@@ -124,7 +124,7 @@ def bar():
     foo()
 test=1
 """,
-        "def bar():\n\ta=0\ntest=1",
+        "def bar():a=0\ntest=1",
     ),
 ]
 
