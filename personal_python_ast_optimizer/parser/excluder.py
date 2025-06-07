@@ -1,5 +1,6 @@
 import ast
 from typing import Literal
+import warnings
 
 from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.config import (
@@ -16,6 +17,7 @@ from personal_python_ast_optimizer.parser.utils import (
 
 def skip_sections_of_module(
     source: ast.Module,
+    module_name: str,
     target_python_version: tuple[int, int] | None,
     sections_to_skip_config: SectionsToSkipConfig,
     tokens_to_skip_config: TokensToSkipConfig,
@@ -55,6 +57,21 @@ def skip_sections_of_module(
             )
 
         depth += 1
+
+    for tokens_to_skip in tokens_to_skip_config:
+        not_found_tokens: list[str] = [
+            t
+            for t in tokens_to_skip.get_not_found_tokens()
+            if t not in tokens_to_skip_config.no_warn
+        ]
+        if not_found_tokens:
+            warnings.warn(
+                (
+                    f"{module_name}: requested to skip "
+                    f"{tokens_to_skip.token_type} {', '.join(not_found_tokens)}"
+                    " but was not found"
+                )
+            )
 
 
 def _check_node_body(

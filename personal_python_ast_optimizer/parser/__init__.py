@@ -16,6 +16,7 @@ def parse_source_to_module_node(source: str) -> ast.Module:
 def run_minify_parser(
     parser: MinifyUnparser,
     source: str,
+    module_name: str = "",
     target_python_version: tuple[int, int] | None = None,
     sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
     tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
@@ -23,7 +24,11 @@ def run_minify_parser(
     module: ast.Module = parse_source_to_module_node(source)
 
     skip_sections_of_module(
-        module, target_python_version, sections_to_skip_config, tokens_to_skip_config
+        module,
+        module_name,
+        target_python_version,
+        sections_to_skip_config,
+        tokens_to_skip_config,
     )
 
     return parser.visit(module)

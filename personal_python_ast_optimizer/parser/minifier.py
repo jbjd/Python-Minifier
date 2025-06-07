@@ -28,22 +28,17 @@ class MinifyUnparser(_Unparser):
     __slots__ = (
         "constant_vars_to_fold",
         "is_last_node_in_body",
-        "module_name",
         "previous_node_in_body",
-        "target_python_version",
         "within_class",
         "within_function",
     )
 
     def __init__(
-        self,
-        module_name: str = "",
-        constant_vars_to_fold: dict[str, int | str] | None = None,
+        self, constant_vars_to_fold: dict[str, int | str] | None = None
     ) -> None:
         self._source: list[str]  # type: ignore
         self._indent: int  # type: ignore
         super().__init__()
-        self.module_name: str = module_name
         self.constant_vars_to_fold: dict[str, int | str] = (
             constant_vars_to_fold if constant_vars_to_fold is not None else {}
         )
