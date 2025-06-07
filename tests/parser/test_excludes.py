@@ -69,7 +69,6 @@ def bar():
     foo = 2
     test = 1
 """,
-        # TODO: This could be more optimal
         "def bar():test=1",
     ),
 ]

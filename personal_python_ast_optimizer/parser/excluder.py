@@ -133,7 +133,7 @@ def _remove_skippable_tokens(
         skip_base_classes(node, tokens_to_skip_config.classes)
         skip_decorators(node, tokens_to_skip_config.decorators)
 
-    elif isinstance(node, ast.FunctionType):
+    elif isinstance(node, ast.FunctionDef):
         skip_decorators(node, tokens_to_skip_config.decorators)
 
     elif isinstance(node, ast.Dict):
