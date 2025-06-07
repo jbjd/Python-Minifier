@@ -54,12 +54,15 @@ def run_minifiyer_and_assert_correct(
     tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
 ):
     unparser: MinifyUnparser = MinifyUnparser(
-        target_python_version=target_python_version,
-        constant_vars_to_fold=constant_vars_to_fold,
+        constant_vars_to_fold=constant_vars_to_fold
     )
 
     minified_code: str = run_minify_parser(
-        unparser, source.before, sections_to_skip_config, tokens_to_skip_config
+        unparser,
+        source.before,
+        target_python_version,
+        sections_to_skip_config,
+        tokens_to_skip_config,
     )
     assert python_code_is_valid(minified_code)
     assert source.after == minified_code

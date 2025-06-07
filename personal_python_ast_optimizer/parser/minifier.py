@@ -3,11 +3,9 @@ from ast import _Unparser  # type: ignore
 from enum import Enum
 from typing import Literal
 
-from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.utils import (
     add_pass_if_body_empty,
     first_occurrence_of_type,
-    skip_base_classes,
     is_return_none,
     remove_dangling_expressions,
     remove_empty_annotations,
@@ -40,14 +38,12 @@ class MinifyUnparser(_Unparser):
     def __init__(
         self,
         module_name: str = "",
-        target_python_version: tuple[int, int] | None = None,
         constant_vars_to_fold: dict[str, int | str] | None = None,
     ) -> None:
         self._source: list[str]  # type: ignore
         self._indent: int  # type: ignore
         super().__init__()
         self.module_name: str = module_name
-        self.target_python_version: tuple[int, int] | None = target_python_version
         self.constant_vars_to_fold: dict[str, int | str] = (
             constant_vars_to_fold if constant_vars_to_fold is not None else {}
         )
@@ -145,15 +141,6 @@ class MinifyUnparser(_Unparser):
             self.traverse(node.cause)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> SkipReason | None:
-        """Skip unnecessary futures imports"""
-        if node.module == "__future__" and self.target_python_version is not None:
-            ignoreable_futures: list[str] = get_ignorable_futures(
-                self.target_python_version
-            )
-            node.names = [
-                alias for alias in node.names if alias.name not in ignoreable_futures
-            ]
-
         if self.constant_vars_to_fold:
             node.names = [
                 alias
@@ -295,9 +282,6 @@ class MinifyUnparser(_Unparser):
 
         add_pass_if_body_empty(node)
 
-        if self._use_version_optimization((3, 0)):
-            skip_base_classes(node, ["object"])
-
         self._write_decorators(node)
 
         self.fill("class " + node.name)
@@ -367,12 +351,6 @@ class MinifyUnparser(_Unparser):
             return ""
         most_recent_token: str = self._source[-1]
         return "" if most_recent_token[-1:] in ("'", '"', ")", "]", "}") else " "
-
-    def _use_version_optimization(self, python_version: tuple[int, int]) -> bool:
-        if self.target_python_version is None:
-            return False
-
-        return self.target_python_version >= python_version
 
     def _get_line_splitter(self) -> Literal["", "\n", ";"]:
         """Get character that starts the next line of code with the shortest

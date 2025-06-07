@@ -1,6 +1,7 @@
 import ast
 from typing import Literal
 
+from personal_python_ast_optimizer.futures import get_ignorable_futures
 from personal_python_ast_optimizer.parser.config import (
     SectionsToSkipConfig,
     TokensToSkipConfig,
@@ -15,13 +16,16 @@ from personal_python_ast_optimizer.parser.utils import (
 
 def skip_sections_of_module(
     source: ast.Module,
-    sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
-    tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
+    target_python_version: tuple[int, int] | None,
+    sections_to_skip_config: SectionsToSkipConfig,
+    tokens_to_skip_config: TokensToSkipConfig,
 ) -> None:
     if (
-        not tokens_to_skip_config.has_code_to_skip()
+        target_python_version is None
+        and not tokens_to_skip_config.has_code_to_skip()
         and not sections_to_skip_config.has_code_to_skip()
     ):
+        # No optimizations to do
         return
 
     depth: int = 0
@@ -34,6 +38,7 @@ def skip_sections_of_module(
             "body",
             depth,
             ast_stack,
+            target_python_version,
             sections_to_skip_config,
             tokens_to_skip_config,
         )
@@ -44,6 +49,7 @@ def skip_sections_of_module(
                 "orelse",
                 depth,
                 ast_stack,
+                target_python_version,
                 sections_to_skip_config,
                 tokens_to_skip_config,
             )
@@ -56,6 +62,7 @@ def _check_node_body(
     body_attr: Literal["body", "orelse"],
     depth: int,
     ast_stack: list[ast.AST],
+    target_python_version: tuple[int, int] | None,
     sections_to_skip_config: SectionsToSkipConfig,
     tokens_to_skip_config: TokensToSkipConfig,
 ) -> None:
@@ -65,7 +72,9 @@ def _check_node_body(
         if not _should_skip_node(
             child_node, sections_to_skip_config, tokens_to_skip_config
         ):
-            if _remove_skippable_tokens(child_node, tokens_to_skip_config):
+            if _remove_skippable_tokens(
+                child_node, target_python_version, tokens_to_skip_config
+            ):
                 new_node_body.append(child_node)
                 if hasattr(child_node, "body"):
                     ast_stack.append(child_node)
@@ -125,11 +134,15 @@ def _should_skip_node(
 
 def _remove_skippable_tokens(
     node: ast.AST,
+    target_python_version: tuple[int, int] | None,
     tokens_to_skip_config: TokensToSkipConfig,
 ) -> bool:
     """Removes decorators, dict keys, and from imports.
     Returns False if node would now be empty can be entirely removed"""
     if isinstance(node, ast.ClassDef):
+        if _use_version_optimization(target_python_version, (3, 0)):
+            skip_base_classes(node, ["object"])
+
         skip_base_classes(node, tokens_to_skip_config.classes)
         skip_decorators(node, tokens_to_skip_config.decorators)
 
@@ -154,7 +167,22 @@ def _remove_skippable_tokens(
             if alias.name not in tokens_to_skip_config.from_imports
         ]
 
+        if node.module == "__future__" and target_python_version is not None:
+            ignoreable_futures: list[str] = get_ignorable_futures(target_python_version)
+            node.names = [
+                alias for alias in node.names if alias.name not in ignoreable_futures
+            ]
+
         if not node.names:
             return False
 
     return True
+
+
+def _use_version_optimization(
+    target_version: tuple[int, int] | None, min_version: tuple[int, int]
+) -> bool:
+    if target_version is None:
+        return False
+
+    return target_version >= min_version
