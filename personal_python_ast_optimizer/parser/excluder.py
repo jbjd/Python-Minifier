@@ -136,14 +136,16 @@ def _remove_skippable_tokens(
     elif isinstance(node, ast.FunctionDef):
         skip_decorators(node, tokens_to_skip_config.decorators)
 
-    elif isinstance(node, ast.Dict):
+    elif (
+        isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign)
+    ) and isinstance(node.value, ast.Dict):
         new_dict = {
             k: v
-            for k, v in zip(node.keys, node.values)
+            for k, v in zip(node.value.keys, node.value.values)
             if getattr(k, "value", "") not in tokens_to_skip_config.dict_keys
         }
-        node.keys = list(new_dict.keys())
-        node.values = list(new_dict.values())
+        node.value.keys = list(new_dict.keys())
+        node.value.values = list(new_dict.values())
 
     elif isinstance(node, ast.ImportFrom):
         node.names = [
