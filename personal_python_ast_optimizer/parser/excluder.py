@@ -60,9 +60,13 @@ def _should_skip_node(
         return node.name in tokens_to_skip_config.functions
 
     if isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
-        if isinstance(node.value, ast.Call):
-            return get_node_name(node.value.func) in tokens_to_skip_config.functions
-        elif isinstance(node, ast.AnnAssign):
+        if (
+            isinstance(node.value, ast.Call)
+            and get_node_name(node.value.func) in tokens_to_skip_config.functions
+        ):
+            return True
+
+        if isinstance(node, ast.AnnAssign):
             return get_node_name(node.target) in tokens_to_skip_config.variables
         else:
             # TODO: Currently if a.b.c.d only "c" and "d" are checked
