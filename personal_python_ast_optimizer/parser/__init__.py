@@ -1,10 +1,7 @@
 import ast
 
-from personal_python_ast_optimizer.parser.config import (
-    SectionsToSkipConfig,
-    TokensToSkipConfig,
-)
-from personal_python_ast_optimizer.parser.excluder import skip_sections_of_module
+from personal_python_ast_optimizer.parser.config import SkipConfig
+from personal_python_ast_optimizer.parser.excluder import AstNodeSkipper
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
 
 
@@ -14,21 +11,12 @@ def parse_source_to_module_node(source: str) -> ast.Module:
 
 
 def run_minify_parser(
-    parser: MinifyUnparser,
-    source: str,
-    module_name: str = "",
-    target_python_version: tuple[int, int] | None = None,
-    sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
-    tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
+    parser: MinifyUnparser, source: str, skip_config: SkipConfig | None = None
 ) -> str:
     module: ast.Module = parse_source_to_module_node(source)
 
-    skip_sections_of_module(
-        module,
-        module_name,
-        target_python_version,
-        sections_to_skip_config,
-        tokens_to_skip_config,
-    )
+    if skip_config is not None:
+        skipper = AstNodeSkipper(module, skip_config)
+        skipper.skip_sections_of_module()
 
     return parser.visit(module)

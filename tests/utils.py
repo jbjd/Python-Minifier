@@ -1,9 +1,9 @@
 import ast
 
-
 from personal_python_ast_optimizer.parser import run_minify_parser
 from personal_python_ast_optimizer.parser.config import (
     SectionsToSkipConfig,
+    SkipConfig,
     TokensToSkipConfig,
 )
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
@@ -60,9 +60,9 @@ def run_minifiyer_and_assert_correct(
     minified_code: str = run_minify_parser(
         unparser,
         source.before,
-        target_python_version,
-        sections_to_skip_config,
-        tokens_to_skip_config,
+        SkipConfig(
+            "", target_python_version, sections_to_skip_config, tokens_to_skip_config
+        ),
     )
     assert python_code_is_valid(minified_code)
     assert source.after == minified_code

@@ -1,9 +1,19 @@
+from abc import ABC, abstractmethod
 from typing import Iterator
 
 from personal_python_ast_optimizer.parser.utils import TokensToSkip
 
 
-class TokensToSkipConfig:
+class Config(ABC):
+
+    __slots__ = ()
+
+    @abstractmethod
+    def has_code_to_skip(self) -> bool:
+        pass
+
+
+class TokensToSkipConfig(Config):
 
     __slots__ = (
         "from_imports",
@@ -50,7 +60,7 @@ class TokensToSkipConfig:
         return any(self)  # type: ignore
 
 
-class SectionsToSkipConfig:
+class SectionsToSkipConfig(Config):
     __slots__ = ("skip_name_equals_main",)
 
     def __init__(self, skip_name_equals_main: bool = False) -> None:
@@ -58,3 +68,32 @@ class SectionsToSkipConfig:
 
     def has_code_to_skip(self) -> bool:
         return any(getattr(self, attr) for attr in self.__slots__)
+
+
+class SkipConfig(Config):
+
+    __slots__ = (
+        "module_name",
+        "target_python_version",
+        "sections_to_skip_config",
+        "tokens_to_skip_config",
+    )
+
+    def __init__(
+        self,
+        module_name: str = "",
+        target_python_version: tuple[int, int] | None = None,
+        sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
+        tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
+    ) -> None:
+        self.module_name: str = module_name
+        self.target_python_version: tuple[int, int] | None = target_python_version
+        self.sections_to_skip_config: SectionsToSkipConfig = sections_to_skip_config
+        self.tokens_to_skip_config: TokensToSkipConfig = tokens_to_skip_config
+
+    def has_code_to_skip(self) -> bool:
+        return (
+            self.target_python_version is not None
+            or self.sections_to_skip_config.has_code_to_skip()
+            or self.tokens_to_skip_config.has_code_to_skip()
+        )
