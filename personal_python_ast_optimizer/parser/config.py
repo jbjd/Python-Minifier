@@ -4,15 +4,15 @@ from typing import Iterator
 
 class TokensToSkip(dict[str, int]):
 
-    __slots__ = ("_tokens_to_skip", "token_type")
+    __slots__ = ("token_type",)
 
     def __init__(self, tokens_to_skip: set[str] | None, token_type: str) -> None:
-        tokens_to_skip: dict[str, int] = self._set_to_dict_of_counts(tokens_to_skip)
-        super().__init__(tokens_to_skip)
+        tokens_and_counts: dict[str, int] = self._set_to_dict_of_counts(tokens_to_skip)
+        super().__init__(tokens_and_counts)
 
         self.token_type: str = token_type
 
-    def __contains__(self, key: str) -> bool:
+    def __contains__(self, key: str) -> bool:  # type: ignore
         """Returns if token is marked to skip and
         increments internal counter when True is returned"""
         contains: bool = super().__contains__(key)
