@@ -139,6 +139,16 @@ class MinifyUnparser(_Unparser):
 
         super().visit_arguments(node)
 
+    def visit_Assign(self, node: ast.Assign) -> SkipReason | None:
+        self.fill(splitter=self._get_line_splitter())
+        for target in node.targets:
+            self.set_precedence(ast._Precedence.TUPLE, target)  # type: ignore
+            self.traverse(target)
+            self.write("=")
+        self.traverse(node.value)
+
+        return None
+
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.fill()
         self.traverse(node.target)
