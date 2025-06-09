@@ -49,6 +49,9 @@ class AstNodeSkipper(ast.NodeTransformer):
 
         if isinstance(node, ast.Module):
             self._warn_unused_skips()
+        else:
+            if hasattr(node, "body") and not node.body:
+                node.body.append(ast.Pass())
 
         return node_to_return
 
@@ -235,7 +238,7 @@ class AstNodeSkipper(ast.NodeTransformer):
     def _has_code_to_skip(self) -> bool:
         return (
             self.target_python_version is not None
-            or self.constant_vars_to_fold
+            or len(self.constant_vars_to_fold) > 0
             or self.tokens_to_skip_config.has_code_to_skip()
             or self.sections_to_skip_config.has_code_to_skip()
         )
