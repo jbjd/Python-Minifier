@@ -284,7 +284,7 @@ class _ConstantFolder(ast.NodeTransformer):
         if not node.names:
             return None
 
-        return super().visit_ImportFrom(node)
+        return self.generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> ast.AST:
         """Extends super's implementation by adding constant folding"""

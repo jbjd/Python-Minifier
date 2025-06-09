@@ -1,8 +1,8 @@
 import ast
 
 from personal_python_ast_optimizer.parser.config import SkipConfig
-from personal_python_ast_optimizer.parser.skipper import AstNodeSkipper
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
+from personal_python_ast_optimizer.parser.skipper import AstNodeSkipper
 
 
 def parse_source_to_module_node(source: str) -> ast.Module:

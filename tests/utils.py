@@ -1,12 +1,12 @@
 import ast
 
-from personal_python_ast_optimizer.parser.run import run_minify_parser
 from personal_python_ast_optimizer.parser.config import (
     SectionsToSkipConfig,
     SkipConfig,
     TokensToSkipConfig,
 )
 from personal_python_ast_optimizer.parser.minifier import MinifyUnparser
+from personal_python_ast_optimizer.parser.run import run_minify_parser
 
 
 class BeforeAndAfter:
