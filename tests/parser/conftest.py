@@ -122,19 +122,6 @@ a if True else b
 
 
 @pytest.fixture
-def name_equals_main_excludes() -> BeforeAndAfter:
-    return BeforeAndAfter(
-        """
-if __name__ == "__main__":
-    a = 2
-else:
-    a = 1
-""",
-        "a=1",
-    )
-
-
-@pytest.fixture
 def assert_excludes() -> BeforeAndAfter:
     return BeforeAndAfter(
         """
@@ -145,18 +132,4 @@ def abc(_):
 def abc(_):
 \tpass
 """.strip(),
-    )
-
-
-@pytest.fixture
-def class_excludes() -> BeforeAndAfter:
-    return BeforeAndAfter(
-        """
-class A(ABC):
-    pass
-
-class B:
-    pass
-""",
-        "class A:pass",
     )

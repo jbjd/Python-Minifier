@@ -1,9 +1,58 @@
+from abc import ABC, abstractmethod
 from typing import Iterator
 
-from personal_python_ast_optimizer.parser.utils import TokensToSkip
+
+class TokensToSkip:
+
+    __slots__ = "_tokens_to_skip", "token_type"
+
+    def __init__(self, tokens_to_skip: set[str] | None, token_type: str) -> None:
+        # Count how often a token got skipped, init to 0
+        self._tokens_to_skip: dict[str, int] = self._set_to_dict_of_counts(
+            tokens_to_skip
+        )
+        self.token_type: str = token_type
+
+    def __bool__(self) -> bool:
+        return len(self._tokens_to_skip) > 0
+
+    def __contains__(self, key: str) -> bool:
+        """Returns if token is marked to skip and
+        increments internal counter when True is returned"""
+        try:
+            self._tokens_to_skip[key] += 1
+            return True
+        except KeyError:
+            return False
+
+    def empty(self) -> bool:
+        return not self._tokens_to_skip
+
+    def get_not_found_tokens(self) -> set[str]:
+        return set(
+            token
+            for token, found_count in self._tokens_to_skip.items()
+            if found_count == 0
+        )
+
+    @staticmethod
+    def _set_to_dict_of_counts(input_set: set[str] | None) -> dict[str, int]:
+        if not input_set:
+            return {}
+
+        return {key: 0 for key in input_set}
 
 
-class TokensToSkipConfig:
+class Config(ABC):
+
+    __slots__ = ()
+
+    @abstractmethod
+    def has_code_to_skip(self) -> bool:
+        pass
+
+
+class TokensToSkipConfig(Config):
 
     __slots__ = (
         "from_imports",
@@ -50,7 +99,7 @@ class TokensToSkipConfig:
         return any(self)  # type: ignore
 
 
-class SectionsToSkipConfig:
+class SectionsToSkipConfig(Config):
     __slots__ = ("skip_name_equals_main",)
 
     def __init__(self, skip_name_equals_main: bool = False) -> None:
@@ -58,3 +107,38 @@ class SectionsToSkipConfig:
 
     def has_code_to_skip(self) -> bool:
         return any(getattr(self, attr) for attr in self.__slots__)
+
+
+class SkipConfig(Config):
+
+    __slots__ = (
+        "module_name",
+        "target_python_version",
+        "constant_vars_to_fold",
+        "sections_to_skip_config",
+        "tokens_to_skip_config",
+    )
+
+    def __init__(
+        self,
+        module_name: str = "",
+        target_python_version: tuple[int, int] | None = None,
+        constant_vars_to_fold: dict[str, int | str] | None = None,
+        sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
+        tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
+    ) -> None:
+        self.module_name: str = module_name
+        self.target_python_version: tuple[int, int] | None = target_python_version
+        self.constant_vars_to_fold: dict[str, int | str] = (
+            {} if constant_vars_to_fold is None else constant_vars_to_fold
+        )
+        self.sections_to_skip_config: SectionsToSkipConfig = sections_to_skip_config
+        self.tokens_to_skip_config: TokensToSkipConfig = tokens_to_skip_config
+
+    def has_code_to_skip(self) -> bool:
+        return (
+            self.target_python_version is not None
+            or len(self.constant_vars_to_fold) > 0
+            or self.sections_to_skip_config.has_code_to_skip()
+            or self.tokens_to_skip_config.has_code_to_skip()
+        )

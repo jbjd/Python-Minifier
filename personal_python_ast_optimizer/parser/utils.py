@@ -1,46 +1,7 @@
 import ast
 from typing import Iterable
 
-
-class TokensToSkip:
-
-    __slots__ = "_tokens_to_skip", "token_type"
-
-    def __init__(self, tokens_to_skip: set[str] | None, token_type: str) -> None:
-        # Count how often a token got skipped, init to 0
-        self._tokens_to_skip: dict[str, int] = self._set_to_dict_of_counts(
-            tokens_to_skip
-        )
-        self.token_type: str = token_type
-
-    def __bool__(self) -> bool:
-        return len(self._tokens_to_skip) > 0
-
-    def __contains__(self, key: str) -> bool:
-        """Returns if token is marked to skip and
-        increments internal counter when True is returned"""
-        try:
-            self._tokens_to_skip[key] += 1
-            return True
-        except KeyError:
-            return False
-
-    def empty(self) -> bool:
-        return not self._tokens_to_skip
-
-    def get_not_found_tokens(self) -> set[str]:
-        return set(
-            token
-            for token, found_count in self._tokens_to_skip.items()
-            if found_count == 0
-        )
-
-    @staticmethod
-    def _set_to_dict_of_counts(input_set: set[str] | None) -> dict[str, int]:
-        if not input_set:
-            return {}
-
-        return {key: 0 for key in input_set}
+from personal_python_ast_optimizer.parser.config import TokensToSkip
 
 
 def get_node_name(node: object) -> str:
@@ -84,11 +45,20 @@ def remove_empty_annotations(node: ast.FunctionDef) -> None:
     ]
 
 
-def ignore_base_classes(
+def skip_base_classes(
     node: ast.ClassDef, classes_to_ignore: Iterable[str] | TokensToSkip
 ) -> None:
     node.bases = [
         base for base in node.bases if getattr(base, "id", "") not in classes_to_ignore
+    ]
+
+
+def skip_decorators(
+    node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef,
+    decorators_to_ignore: Iterable[str] | TokensToSkip,
+) -> None:
+    node.decorator_list = [
+        n for n in node.decorator_list if get_node_name(n) not in decorators_to_ignore
     ]
 
 

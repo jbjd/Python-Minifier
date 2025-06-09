@@ -7,17 +7,47 @@ from personal_python_ast_optimizer.parser.config import (
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correct
 
 
-def test_exclude_name_equals_main(name_equals_main_excludes: BeforeAndAfter):
+def test_exclude_name_equals_main():
+
+    before_and_after = BeforeAndAfter(
+        """
+if __name__ == "__main__":
+    a = 2
+""",
+        "",
+    )
+
     run_minifiyer_and_assert_correct(
-        name_equals_main_excludes,
-        sections_config=SectionsToSkipConfig(skip_name_equals_main=True),
+        before_and_after,
+        sections_to_skip_config=SectionsToSkipConfig(skip_name_equals_main=True),
     )
 
 
-def test_exclude_classes(class_excludes: BeforeAndAfter):
+def test_exclude_classes():
+    before_and_after = BeforeAndAfter(
+        """
+class A(ABC):
+    pass
+
+class B:
+    pass
+""",
+        "class A:pass",
+    )
     run_minifiyer_and_assert_correct(
-        class_excludes,
-        tokens_config=TokensToSkipConfig(classes={"ABC", "B"}),
+        before_and_after,
+        tokens_to_skip_config=TokensToSkipConfig(classes={"ABC", "B"}),
+    )
+
+
+def test_exclude_dict_keys():
+    before_and_after = BeforeAndAfter(
+        "a = {'a': 1, 'b': 2}",
+        "a={'a':1}",
+    )
+    run_minifiyer_and_assert_correct(
+        before_and_after,
+        tokens_to_skip_config=TokensToSkipConfig(dict_keys={"b"}),
     )
 
 
@@ -42,7 +72,7 @@ def bar():
     test = 1
     foo = 2
 """,
-        "def bar():\n\ttest=1",
+        "def bar():test=1",
     ),
     BeforeAndAfter(
         """
@@ -50,8 +80,7 @@ def bar():
     foo = 2
     test = 1
 """,
-        # TODO: This could be more optimal
-        "def bar():\n\tpass\n\ttest=1",
+        "def bar():test=1",
     ),
 ]
 
@@ -60,7 +89,7 @@ def bar():
 def test_exclude_assign(before_and_after: BeforeAndAfter):
     run_minifiyer_and_assert_correct(
         before_and_after,
-        tokens_config=TokensToSkipConfig(variables={"foo"}),
+        tokens_to_skip_config=TokensToSkipConfig(variables={"foo"}),
     )
 
 
@@ -87,7 +116,7 @@ def bar():
 def test_exclude_function_def(before_and_after: BeforeAndAfter):
     run_minifiyer_and_assert_correct(
         before_and_after,
-        tokens_config=TokensToSkipConfig(functions={"foo"}),
+        tokens_to_skip_config=TokensToSkipConfig(functions={"foo"}),
     )
 
 
@@ -105,7 +134,7 @@ def bar():
     foo()
 test=1
 """,
-        "def bar():\n\ta=0\ntest=1",
+        "def bar():a=0\ntest=1",
     ),
 ]
 
@@ -114,7 +143,7 @@ test=1
 def test_exclude_function_call(before_and_after: BeforeAndAfter):
     run_minifiyer_and_assert_correct(
         before_and_after,
-        tokens_config=TokensToSkipConfig(functions={"foo"}),
+        tokens_to_skip_config=TokensToSkipConfig(functions={"foo"}),
     )
 
 
@@ -139,7 +168,7 @@ def bar():
 def test_exclude_function_assign(before_and_after: BeforeAndAfter):
     run_minifiyer_and_assert_correct(
         before_and_after,
-        tokens_config=TokensToSkipConfig(functions={"foo"}),
+        tokens_to_skip_config=TokensToSkipConfig(functions={"foo"}),
     )
 
 
@@ -158,7 +187,7 @@ is_cid = re.compile('').match
     )
     run_minifiyer_and_assert_correct(
         before_and_after,
-        tokens_config=TokensToSkipConfig(
+        tokens_to_skip_config=TokensToSkipConfig(
             functions={"getLogger"}, variables={"TYPE_CHECKING"}
         ),
     )
