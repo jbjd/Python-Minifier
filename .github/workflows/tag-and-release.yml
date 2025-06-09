@@ -1,6 +1,11 @@
 name: Tag And Release
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - version.txt
   workflow_dispatch:
 
 permissions:
