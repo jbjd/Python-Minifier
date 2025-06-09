@@ -9,6 +9,7 @@ from personal_python_ast_optimizer.parser.config import (
     TokensToSkipConfig,
 )
 from personal_python_ast_optimizer.parser.utils import (
+    first_occurrence_of_type,
     get_node_name,
     is_name_equals_main_node,
     skip_base_classes,
@@ -21,6 +22,7 @@ class AstNodeSkipper:
     __slots__ = (
         "source",
         "module_name",
+        "constant_vars_to_fold",
         "target_python_version",
         "sections_to_skip_config",
         "tokens_to_skip_config",
@@ -29,6 +31,9 @@ class AstNodeSkipper:
     def __init__(self, source: ast.Module, skip_config: SkipConfig) -> None:
         self.source: ast.Module = source
         self.module_name: str = skip_config.module_name
+        self.constant_vars_to_fold: dict[str, int | str] = (
+            skip_config.constant_vars_to_fold
+        )
         self.target_python_version: tuple[int, int] | None = (
             skip_config.target_python_version
         )
@@ -40,12 +45,15 @@ class AstNodeSkipper:
         )
 
     def skip_sections_of_module(self) -> None:
+        if self.constant_vars_to_fold:
+            self._fold_constants()
+
         if (
             self.target_python_version is None
             and not self.tokens_to_skip_config.has_code_to_skip()
             and not self.sections_to_skip_config.has_code_to_skip()
         ):
-            # No optimizations to do
+            # No additional optimizations to do
             return
 
         depth: int = 0
@@ -74,6 +82,10 @@ class AstNodeSkipper:
                         " but was not found"
                     )
                 )
+
+    def _fold_constants(self) -> None:
+        folder = _ConstantFolder(self.constant_vars_to_fold)
+        self.source = folder.visit(self.source)
 
     def _check_node_body(
         self,
@@ -195,3 +207,101 @@ class AstNodeSkipper:
             return False
 
         return self.target_python_version >= min_version
+
+
+class _ConstantFolder(ast.NodeTransformer):
+    """Given an ast Module, walks all nodes and folds constants"""
+
+    __slots__ = ("constant_vars_to_fold",)
+
+    def __init__(self, constant_vars_to_fold: dict[str, int | str]) -> None:
+        self.constant_vars_to_fold: dict[str, int | str] = constant_vars_to_fold
+
+    def visit_Assign(self, node: ast.Assign) -> ast.AST | None:
+        """Skips assign if it is an assignment to a constant that is being folded"""
+        new_targets: list[ast.expr] = [
+            target
+            for target in node.targets
+            if not self._is_assign_of_folded_constant(target, node.value)
+        ]
+        if len(new_targets) == 0:
+            return None
+
+        node.targets = new_targets
+
+        if isinstance(node.targets[0], ast.Tuple) and isinstance(node.value, ast.Tuple):
+            target_elts = node.targets[0].elts
+            original_target_len = len(target_elts)
+
+            # Weird edge case: unpack contains a starred expression like *a,b = 1,2,3
+            # Need to use negative indexes if a bad index comes after one of these
+            starred_expr_index: int = first_occurrence_of_type(target_elts, ast.Starred)
+            bad_indexes: list[int] = [
+                (
+                    i
+                    if starred_expr_index == -1 or i < starred_expr_index
+                    else original_target_len - i - 1
+                )
+                for i in range(len(target_elts))
+                if self._is_assign_of_folded_constant(
+                    target_elts[i], node.value.elts[i]
+                )
+            ]
+
+            node.targets[0].elts = [
+                target for i, target in enumerate(target_elts) if i not in bad_indexes
+            ]
+            node.value.elts = [
+                target
+                for i, target in enumerate(node.value.elts)
+                if i not in bad_indexes
+            ]
+
+            if len(node.targets[0].elts) == 0:
+                return None
+            if len(node.targets[0].elts) == 1:
+                node.targets = [node.targets[0].elts[0]]
+            if len(node.value.elts) == 1:
+                node.value = node.value.elts[0]
+
+        return self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> ast.AST | None:
+        """Skips assign if it is an assignment to a constant that is being folded"""
+        if self._is_assign_of_folded_constant(node.target, node.value):
+            return None
+
+        return self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST | None:
+        if self.constant_vars_to_fold:
+            node.names = [
+                alias
+                for alias in node.names
+                if alias.name not in self.constant_vars_to_fold
+            ]
+
+        if not node.names:
+            return None
+
+        return super().visit_ImportFrom(node)
+
+    def visit_Name(self, node: ast.Name) -> ast.AST:
+        """Extends super's implementation by adding constant folding"""
+        if node.id in self.constant_vars_to_fold:
+            constant_value = self.constant_vars_to_fold[node.id]
+            return ast.Constant(constant_value)
+        else:
+            return node
+
+    def _is_assign_of_folded_constant(
+        self, target: ast.expr, value: ast.expr | None
+    ) -> bool:
+        """Returns if node is assignment of a value that we are folding. In this case,
+        there is no need to assign the value since its use"""
+
+        return (
+            isinstance(target, ast.Name)
+            and target.id in self.constant_vars_to_fold
+            and isinstance(value, ast.Constant)
+        )
