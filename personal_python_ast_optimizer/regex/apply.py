@@ -2,7 +2,7 @@ import re
 import warnings
 from typing import Iterable
 
-from personal_python_ast_optimizer.regex import RegexReplacement
+from personal_python_ast_optimizer.regex.classes import RegexReplacement
 
 
 def apply_regex(
@@ -29,12 +29,13 @@ def apply_regex_to_file(
     path: str,
     regex_replacement: RegexReplacement | Iterable[RegexReplacement],
     warning_id: str = "",
+    encoding: str = "utf-8",
 ):
     """Wraps apply_regex with opening and writing to a file"""
-    with open(path) as fp:
+    with open(path, "r", encoding=encoding) as fp:
         source: str = fp.read()
 
     source = apply_regex(source, regex_replacement, warning_id)
 
-    with open(path, "w") as fp:
+    with open(path, "w", encoding=encoding) as fp:
         fp.write(source)
