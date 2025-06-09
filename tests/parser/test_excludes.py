@@ -40,6 +40,17 @@ class B:
     )
 
 
+def test_exclude_dict_keys():
+    before_and_after = BeforeAndAfter(
+        "a = {'a': 1, 'b': 2}",
+        "a={'a':1}",
+    )
+    run_minifiyer_and_assert_correct(
+        before_and_after,
+        tokens_to_skip_config=TokensToSkipConfig(dict_keys={"b"}),
+    )
+
+
 _exclude_assign_cases = [
     BeforeAndAfter(
         """

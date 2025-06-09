@@ -54,7 +54,7 @@ def skip_base_classes(
 
 
 def skip_decorators(
-    node: ast.ClassDef | ast.FunctionDef,
+    node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef,
     decorators_to_ignore: Iterable[str] | TokensToSkip,
 ) -> None:
     node.decorator_list = [
