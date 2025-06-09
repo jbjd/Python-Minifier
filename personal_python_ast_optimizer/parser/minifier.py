@@ -1,6 +1,5 @@
 import ast
 from ast import _Unparser  # type: ignore
-from enum import Enum
 from typing import Literal
 
 from personal_python_ast_optimizer.parser.utils import (
@@ -13,13 +12,6 @@ from personal_python_ast_optimizer.python_info import (
     comparison_and_conjunctions,
     operators_and_separators,
 )
-
-
-class SkipReason(Enum):
-    ALL_SUBNODES_REMOVED = 0
-    ANNOTATION = 1
-    FOLDED_CONSTANT = 2
-    EXCLUDED = 3
 
 
 class MinifyUnparser(_Unparser):
@@ -72,7 +64,7 @@ class MinifyUnparser(_Unparser):
         node: ast.AST,
         is_last_node_in_body: bool = False,
         last_visited_node: ast.stmt | None = None,
-    ) -> SkipReason | None:
+    ) -> None:
         method = "visit_" + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
@@ -86,15 +78,9 @@ class MinifyUnparser(_Unparser):
             last_visited_node: ast.stmt | None = None
             last_index = len(node) - 1
             for index, item in enumerate(node):
-                # TODO: store last visited node in context and make function for
-                # can use semicolon. Use new var to check if writing pass is needed in
-                # exclusion
                 is_last_node_in_body: bool = index == last_index
-                result: SkipReason | None = self.visit_node(
-                    item, is_last_node_in_body, last_visited_node
-                )
-                if result is None:
-                    last_visited_node = item
+                self.visit_node(item, is_last_node_in_body, last_visited_node)
+                last_visited_node = item
         else:
             self.visit_node(node)
 
@@ -139,7 +125,7 @@ class MinifyUnparser(_Unparser):
 
         super().visit_arguments(node)
 
-    def visit_Assign(self, node: ast.Assign) -> SkipReason | None:
+    def visit_Assign(self, node: ast.Assign) -> None:
         self.fill(splitter=self._get_line_splitter())
         for target in node.targets:
             self.set_precedence(ast._Precedence.TUPLE, target)  # type: ignore
@@ -155,10 +141,10 @@ class MinifyUnparser(_Unparser):
         self.write(self.binop[node.op.__class__.__name__] + "=")
         self.traverse(node.value)
 
-    def visit_AnnAssign(self, node: ast.AnnAssign) -> SkipReason | None:
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """Only writes type annotations if necessary"""
         if node.value is None and (not self.within_class or self.within_function):
-            return SkipReason.ANNOTATION
+            return
 
         self.fill()
         with self.delimit_if(
