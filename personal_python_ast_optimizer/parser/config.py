@@ -113,6 +113,7 @@ class SkipConfig(Config):
 
     __slots__ = (
         "module_name",
+        "skip_type_hints",
         "target_python_version",
         "constant_vars_to_fold",
         "sections_to_skip_config",
@@ -122,12 +123,14 @@ class SkipConfig(Config):
     def __init__(
         self,
         module_name: str = "",
+        skip_type_hints: bool = False,
         target_python_version: tuple[int, int] | None = None,
         constant_vars_to_fold: dict[str, int | str] | None = None,
         sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
         tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
     ) -> None:
         self.module_name: str = module_name
+        self.skip_type_hints: bool = skip_type_hints
         self.target_python_version: tuple[int, int] | None = target_python_version
         self.constant_vars_to_fold: dict[str, int | str] = (
             {} if constant_vars_to_fold is None else constant_vars_to_fold
@@ -137,7 +140,8 @@ class SkipConfig(Config):
 
     def has_code_to_skip(self) -> bool:
         return (
-            self.target_python_version is not None
+            self.skip_type_hints
+            or self.target_python_version is not None
             or len(self.constant_vars_to_fold) > 0
             or self.sections_to_skip_config.has_code_to_skip()
             or self.tokens_to_skip_config.has_code_to_skip()

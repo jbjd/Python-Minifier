@@ -20,6 +20,7 @@ class AstNodeSkipper(ast.NodeTransformer):
 
     __slots__ = (
         "module_name",
+        "skip_type_hints",
         "constant_vars_to_fold",
         "target_python_version",
         "sections_to_skip_config",
@@ -28,6 +29,8 @@ class AstNodeSkipper(ast.NodeTransformer):
 
     def __init__(self, skip_config: SkipConfig) -> None:
         self.module_name: str = skip_config.module_name
+        # TODO: Move type hint logic to this class
+        self.skip_type_hints: bool = skip_config.skip_type_hints
         self.constant_vars_to_fold: dict[str, int | str] = (
             skip_config.constant_vars_to_fold
         )
