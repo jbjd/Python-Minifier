@@ -1,7 +1,7 @@
 import ast
 import warnings
 
-from personal_python_ast_optimizer.futures import get_ignorable_futures
+from personal_python_ast_optimizer.futures import get_unneeded_futures
 from personal_python_ast_optimizer.parser.config import (
     SectionsToSkipConfig,
     SkipConfig,
@@ -167,11 +167,14 @@ class AstNodeSkipper(ast.NodeTransformer):
         ]
 
         if node.module == "__future__" and self.target_python_version is not None:
-            ignoreable_futures: list[str] = get_ignorable_futures(
+            skippable_futures: list[str] = get_unneeded_futures(
                 self.target_python_version
             )
+            if self.skip_type_hints:
+                skippable_futures.append("annotations")
+
             node.names = [
-                alias for alias in node.names if alias.name not in ignoreable_futures
+                alias for alias in node.names if alias.name not in skippable_futures
             ]
 
         if self.constant_vars_to_fold:

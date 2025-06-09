@@ -60,6 +60,7 @@ def run_minifiyer_and_assert_correct(
         source.before,
         SkipConfig(
             "",
+            True,  # TODO: test
             target_python_version,
             constant_vars_to_fold,
             sections_to_skip_config,
