@@ -1,13 +1,29 @@
 from tests.utils import BeforeAndAfter, run_minifiyer_and_assert_correct
 
 
-def test_class_only_docstring(only_docstring_class: BeforeAndAfter):
-    run_minifiyer_and_assert_correct(only_docstring_class)
+def test_class_only_docstring():
+    before_and_after = BeforeAndAfter(
+        """
+class Foo():
+    '''Some Class'''
+""",
+        "class Foo:pass",
+    )
+    run_minifiyer_and_assert_correct(before_and_after)
 
 
-def test_tuple_class(tuple_class: BeforeAndAfter):
-    run_minifiyer_and_assert_correct(tuple_class)
-
-
-def test_class_dangling_constants(tuple_class: BeforeAndAfter):
-    run_minifiyer_and_assert_correct(tuple_class)
+def test_tuple_class():
+    before_and_after = BeforeAndAfter(
+        """
+class SomeTuple():
+    '''A tuple, wow!'''
+    thing1: str
+    thing2: int
+""",
+        """
+class SomeTuple:
+\tthing1:'Any'
+\tthing2:'Any'
+""".strip(),
+    )
+    run_minifiyer_and_assert_correct(before_and_after)
