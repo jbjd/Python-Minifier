@@ -42,7 +42,7 @@ class MinifyUnparser(_Unparser):
             return text.strip()
 
         if text in comparison_and_conjunctions:
-            return self._needed_space_before_expr() + text[1:]
+            return self._get_space_before_write() + text[1:]
 
         return text
 
@@ -115,7 +115,7 @@ class MinifyUnparser(_Unparser):
         self.write(self.binop[node.op.__class__.__name__] + "=")
         self.traverse(node.value)
 
-    def _needed_space_before_expr(self) -> str:
+    def _get_space_before_write(self) -> str:
         if not self._source:
             return ""
         most_recent_token: str = self._source[-1]

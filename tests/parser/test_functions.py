@@ -23,10 +23,7 @@ def foo(bar, spam, eggs):
     a: int = 1
     return a
 """,
-        """
-def foo(bar,spam,eggs):
-\ta=1;return a
-""".strip(),
+        "def foo(bar,spam,eggs):\n\ta=1;return a",
     )
     run_minifiyer_and_assert_correct(before_and_after)
 

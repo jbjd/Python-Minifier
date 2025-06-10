@@ -211,7 +211,7 @@ class AstNodeSkipper(ast.NodeTransformer):
             if not node.value and self._within_class and not self._within_function:
                 node.annotation = ast.Constant("Any")
             else:
-                return ast.Assign([node.target], node.value)
+                return ast.Assign([node.target], node.value)  # type: ignore
 
         return self.generic_visit(node)
 
@@ -251,7 +251,7 @@ class AstNodeSkipper(ast.NodeTransformer):
             constant_value = self.constant_vars_to_fold[node.id]
             return ast.Constant(constant_value)
         else:
-            return node
+            return self.generic_visit(node)
 
     def visit_Dict(self, node: ast.Dict) -> ast.AST:
         new_dict = {
@@ -262,7 +262,7 @@ class AstNodeSkipper(ast.NodeTransformer):
         node.keys = list(new_dict.keys())
         node.values = list(new_dict.values())
 
-        return node
+        return self.generic_visit(node)
 
     def visit_If(self, node: ast.If) -> ast.AST | None:
         if is_name_equals_main_node(node.test):
@@ -288,7 +288,7 @@ class AstNodeSkipper(ast.NodeTransformer):
     def visit_arg(self, node: ast.arg) -> ast.AST:
         if self.extras_to_skip_config.skip_type_hints:
             node.annotation = None
-        return node
+        return self.generic_visit(node)
 
     def visit_arguments(self, node: ast.arguments) -> ast.AST:
         if self.extras_to_skip_config.skip_type_hints:

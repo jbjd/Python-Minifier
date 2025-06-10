@@ -42,7 +42,7 @@ class Config(ABC):
         pass
 
     def has_code_to_skip(self) -> bool:
-        return any(getattr(self, attr) for attr in self.__slots__)
+        return any(getattr(self, attr) for attr in self.__slots__)  # type: ignore
 
 
 class TokensToSkipConfig(Config):
@@ -144,9 +144,9 @@ class SkipConfig(Config):
 
     def has_code_to_skip(self) -> bool:
         return (
-            self.skip_type_hints
-            or self.target_python_version is not None
+            self.target_python_version is not None
             or len(self.constant_vars_to_fold) > 0
             or self.sections_to_skip_config.has_code_to_skip()
             or self.tokens_to_skip_config.has_code_to_skip()
+            or self.extras_to_skip_config.has_code_to_skip()
         )
