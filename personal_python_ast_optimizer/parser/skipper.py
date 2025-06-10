@@ -207,13 +207,22 @@ class AstNodeSkipper(ast.NodeTransformer):
         ):
             return None
 
-        if self.extras_to_skip_config.skip_type_hints:
-            if not node.value and self._within_class and not self._within_function:
-                node.annotation = ast.Constant("Any")
-            else:
-                return ast.Assign([node.target], node.value)  # type: ignore
+        parsed_node: ast.AnnAssign = self.generic_visit(node)
 
-        return self.generic_visit(node)
+        if self.extras_to_skip_config.skip_type_hints:
+            if (
+                not parsed_node.value
+                and self._within_class
+                and not self._within_function
+            ):
+                parsed_node.annotation = ast.Constant("Any")
+            elif parsed_node.value is None:
+                # This should be unreachable
+                return None
+            else:
+                return ast.Assign([parsed_node.target], parsed_node.value)
+
+        return parsed_node
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST | None:
         node.names = [
