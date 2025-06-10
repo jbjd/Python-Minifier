@@ -14,8 +14,8 @@ from personal_python_ast_optimizer.parser.utils import (
     get_node_name,
     is_name_equals_main_node,
     is_return_none,
-    skip_dangling_expressions,
     skip_base_classes,
+    skip_dangling_expressions,
     skip_decorators,
 )
 
@@ -207,7 +207,7 @@ class AstNodeSkipper(ast.NodeTransformer):
         ):
             return None
 
-        parsed_node: ast.AnnAssign = self.generic_visit(node)
+        parsed_node: ast.AnnAssign = self.generic_visit(node)  # type: ignore
 
         if self.extras_to_skip_config.skip_type_hints:
             if (

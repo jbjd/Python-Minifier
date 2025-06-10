@@ -1,8 +1,8 @@
 import ast
 from unittest.mock import patch
+
 from personal_python_ast_optimizer.parser.config import SkipConfig, TokensToSkipConfig
 from personal_python_ast_optimizer.parser.skipper import AstNodeSkipper
-
 
 _MODULE_NAME: str = "personal_python_ast_optimizer.parser.skipper"
 
