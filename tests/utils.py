@@ -1,6 +1,7 @@
 import ast
 
 from personal_python_ast_optimizer.parser.config import (
+    ExtrasToSkipConfig,
     SectionsToSkipConfig,
     SkipConfig,
     TokensToSkipConfig,
@@ -60,11 +61,11 @@ def run_minifiyer_and_assert_correct(
         source.before,
         SkipConfig(
             "",
-            True,  # TODO: test
             target_python_version,
             constant_vars_to_fold,
             sections_to_skip_config,
             tokens_to_skip_config,
+            ExtrasToSkipConfig(),  # TODO: test
         ),
     )
     assert python_code_is_valid(minified_code)

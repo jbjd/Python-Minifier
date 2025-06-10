@@ -38,8 +38,11 @@ class Config(ABC):
     __slots__ = ()
 
     @abstractmethod
-    def has_code_to_skip(self) -> bool:
+    def __init__(self) -> None:
         pass
+
+    def has_code_to_skip(self) -> bool:
+        return any(getattr(self, attr) for attr in self.__slots__)
 
 
 class TokensToSkipConfig(Config):
@@ -95,38 +98,49 @@ class SectionsToSkipConfig(Config):
     def __init__(self, skip_name_equals_main: bool = False) -> None:
         self.skip_name_equals_main: bool = skip_name_equals_main
 
-    def has_code_to_skip(self) -> bool:
-        return any(getattr(self, attr) for attr in self.__slots__)
+
+class ExtrasToSkipConfig(Config):
+    __slots__ = ("skip_dangling_expressions", "skip_return_none", "skip_type_hints")
+
+    def __init__(
+        self,
+        skip_dangling_expressions: bool = True,
+        skip_return_none: bool = True,
+        skip_type_hints: bool = True,
+    ) -> None:
+        self.skip_dangling_expressions: bool = skip_dangling_expressions
+        self.skip_return_none: bool = skip_return_none
+        self.skip_type_hints: bool = skip_type_hints
 
 
 class SkipConfig(Config):
 
     __slots__ = (
         "module_name",
-        "skip_type_hints",
         "target_python_version",
         "constant_vars_to_fold",
         "sections_to_skip_config",
         "tokens_to_skip_config",
+        "extras_to_skip_config",
     )
 
     def __init__(
         self,
         module_name: str = "",
-        skip_type_hints: bool = False,
         target_python_version: tuple[int, int] | None = None,
         constant_vars_to_fold: dict[str, int | str] | None = None,
         sections_to_skip_config: SectionsToSkipConfig = SectionsToSkipConfig(),
         tokens_to_skip_config: TokensToSkipConfig = TokensToSkipConfig(),
+        extras_to_skip_config: ExtrasToSkipConfig = ExtrasToSkipConfig(),
     ) -> None:
         self.module_name: str = module_name
-        self.skip_type_hints: bool = skip_type_hints
         self.target_python_version: tuple[int, int] | None = target_python_version
         self.constant_vars_to_fold: dict[str, int | str] = (
             {} if constant_vars_to_fold is None else constant_vars_to_fold
         )
         self.sections_to_skip_config: SectionsToSkipConfig = sections_to_skip_config
         self.tokens_to_skip_config: TokensToSkipConfig = tokens_to_skip_config
+        self.extras_to_skip_config: ExtrasToSkipConfig = extras_to_skip_config
 
     def has_code_to_skip(self) -> bool:
         return (

@@ -4,6 +4,14 @@ from typing import Iterable
 from personal_python_ast_optimizer.parser.config import TokensToSkip
 
 
+def can_skip_annotation_assign(
+    node: ast.AnnAssign, within_class: bool, within_function: bool
+) -> bool:
+    """Returns True if an annotation assign in unneeded in given context.
+    Annotations are only needed when assigned in a class outside of a function"""
+    return node.value is None and (not within_class or within_function)
+
+
 def get_node_name(node: object) -> str:
     """Gets id or attr which both can represent var names"""
     if isinstance(node, ast.Call):
@@ -26,7 +34,7 @@ def is_return_none(node: ast.Return) -> bool:
     return isinstance(node.value, ast.Constant) and node.value.value is None
 
 
-def remove_dangling_expressions(node: ast.ClassDef | ast.FunctionDef) -> None:
+def skip_dangling_expressions(node: ast.ClassDef | ast.FunctionDef) -> None:
     """Removes constant daggling expression like doc strings"""
     node.body = [
         element
@@ -60,11 +68,6 @@ def skip_decorators(
     node.decorator_list = [
         n for n in node.decorator_list if get_node_name(n) not in decorators_to_ignore
     ]
-
-
-def add_pass_if_body_empty(node: ast.ClassDef | ast.FunctionDef) -> None:
-    if not node.body:
-        node.body.append(ast.Pass())
 
 
 def first_occurrence_of_type(data: list, target_type) -> int:

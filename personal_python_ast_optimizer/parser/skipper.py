@@ -3,14 +3,18 @@ import warnings
 
 from personal_python_ast_optimizer.futures import get_unneeded_futures
 from personal_python_ast_optimizer.parser.config import (
+    ExtrasToSkipConfig,
     SectionsToSkipConfig,
     SkipConfig,
     TokensToSkipConfig,
 )
 from personal_python_ast_optimizer.parser.utils import (
+    can_skip_annotation_assign,
     first_occurrence_of_type,
     get_node_name,
     is_name_equals_main_node,
+    is_return_none,
+    skip_dangling_expressions,
     skip_base_classes,
     skip_decorators,
 )
@@ -19,45 +23,74 @@ from personal_python_ast_optimizer.parser.utils import (
 class AstNodeSkipper(ast.NodeTransformer):
 
     __slots__ = (
+        "_within_class",
+        "_within_function",
         "module_name",
-        "skip_type_hints",
         "constant_vars_to_fold",
         "target_python_version",
+        "extras_to_skip_config",
         "sections_to_skip_config",
         "tokens_to_skip_config",
     )
 
-    def __init__(self, skip_config: SkipConfig) -> None:
-        self.module_name: str = skip_config.module_name
-        # TODO: Move type hint logic to this class
-        self.skip_type_hints: bool = skip_config.skip_type_hints
-        self.constant_vars_to_fold: dict[str, int | str] = (
-            skip_config.constant_vars_to_fold
-        )
+    def __init__(self, config: SkipConfig) -> None:
+        self.module_name: str = config.module_name
+        self.constant_vars_to_fold: dict[str, int | str] = config.constant_vars_to_fold
         self.target_python_version: tuple[int, int] | None = (
-            skip_config.target_python_version
+            config.target_python_version
         )
+        self.extras_to_skip_config: ExtrasToSkipConfig = config.extras_to_skip_config
         self.sections_to_skip_config: SectionsToSkipConfig = (
-            skip_config.sections_to_skip_config
+            config.sections_to_skip_config
         )
-        self.tokens_to_skip_config: TokensToSkipConfig = (
-            skip_config.tokens_to_skip_config
-        )
+        self.tokens_to_skip_config: TokensToSkipConfig = config.tokens_to_skip_config
+
+        self._within_class: bool = False
+        self._within_function: bool = False
+
+    @staticmethod
+    def _within_class_node(function):
+        def wrapper(self: "AstNodeSkipper", *args, **kwargs) -> ast.AST | None:
+            self._within_class = True
+            try:
+                return function(self, *args, **kwargs)
+            finally:
+                self._within_class = False
+
+        return wrapper
+
+    @staticmethod
+    def _within_function_node(function):
+        def wrapper(self: "AstNodeSkipper", *args, **kwargs) -> ast.AST | None:
+            self._within_function = True
+            try:
+                return function(self, *args, **kwargs)
+            finally:
+                self._within_function = False
+
+        return wrapper
 
     def generic_visit(self, node: ast.AST) -> ast.AST:
-        if isinstance(node, ast.Module) and not self._has_code_to_skip():
-            return node
-
         node_to_return: ast.AST = super().generic_visit(node)
 
-        if isinstance(node, ast.Module):
-            self._warn_unused_skips()
-        else:
-            if hasattr(node, "body") and not node.body:
-                node.body.append(ast.Pass())
+        if not isinstance(node, ast.Module) and hasattr(node, "body") and not node.body:
+            node.body.append(ast.Pass())
 
         return node_to_return
 
+    def visit_Module(self, node: ast.Module) -> ast.AST:
+        if not self._has_code_to_skip():
+            return node
+
+        if self.extras_to_skip_config.skip_dangling_expressions:
+            skip_dangling_expressions(node)
+
+        try:
+            return self.generic_visit(node)
+        finally:
+            self._warn_unused_skips()
+
+    @_within_class_node
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST | None:
         if node.name in self.tokens_to_skip_config.classes:
             return None
@@ -65,23 +98,34 @@ class AstNodeSkipper(ast.NodeTransformer):
         if self._use_version_optimization((3, 0)):
             skip_base_classes(node, ["object"])
 
+        if self.extras_to_skip_config.skip_dangling_expressions:
+            skip_dangling_expressions(node)
         skip_base_classes(node, self.tokens_to_skip_config.classes)
         skip_decorators(node, self.tokens_to_skip_config.decorators)
 
         return self.generic_visit(node)
 
+    @_within_function_node
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST | None:
         if node.name in self.tokens_to_skip_config.functions:
             return None
 
+        if self.extras_to_skip_config.skip_type_hints:
+            node.returns = None
+
+        if self.extras_to_skip_config.skip_dangling_expressions:
+            skip_dangling_expressions(node)
         skip_decorators(node, self.tokens_to_skip_config.decorators)
 
         return self.generic_visit(node)
 
+    @_within_function_node
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST | None:
         if node.name in self.tokens_to_skip_config.functions:
             return None
 
+        if self.extras_to_skip_config.skip_dangling_expressions:
+            skip_dangling_expressions(node)
         skip_decorators(node, self.tokens_to_skip_config.decorators)
 
         return self.generic_visit(node)
@@ -154,8 +198,20 @@ class AstNodeSkipper(ast.NodeTransformer):
             self._should_skip_function_assign(node)
             or get_node_name(node.target) in self.tokens_to_skip_config.variables
             or self._is_assign_of_folded_constant(node.target, node.value)
+            or (
+                self.extras_to_skip_config.skip_type_hints
+                and can_skip_annotation_assign(
+                    node, self._within_class, self._within_function
+                )
+            )
         ):
             return None
+
+        if self.extras_to_skip_config.skip_type_hints:
+            if not node.value and self._within_class and not self._within_function:
+                node.annotation = ast.Constant("Any")
+            else:
+                return ast.Assign([node.target], node.value)
 
         return self.generic_visit(node)
 
@@ -170,7 +226,7 @@ class AstNodeSkipper(ast.NodeTransformer):
             skippable_futures: list[str] = get_unneeded_futures(
                 self.target_python_version
             )
-            if self.skip_type_hints:
+            if self.extras_to_skip_config.skip_type_hints:
                 skippable_futures.append("annotations")
 
             node.names = [
@@ -214,12 +270,32 @@ class AstNodeSkipper(ast.NodeTransformer):
 
         return self.generic_visit(node)
 
+    def visit_Return(self, node: ast.Return) -> ast.AST:
+        if self.extras_to_skip_config.skip_return_none and is_return_none(node):
+            node.value = None
+
+        return self.generic_visit(node)
+
     def visit_Expr(self, node: ast.Expr) -> ast.AST | None:
         if (
             isinstance(node.value, ast.Call)
             and get_node_name(node.value.func) in self.tokens_to_skip_config.functions
         ):
             return None
+
+        return self.generic_visit(node)
+
+    def visit_arg(self, node: ast.arg) -> ast.AST:
+        if self.extras_to_skip_config.skip_type_hints:
+            node.annotation = None
+        return node
+
+    def visit_arguments(self, node: ast.arguments) -> ast.AST:
+        if self.extras_to_skip_config.skip_type_hints:
+            if node.kwarg is not None:
+                node.kwarg.annotation = None
+            if node.vararg is not None:
+                node.vararg.annotation = None
 
         return self.generic_visit(node)
 
@@ -245,6 +321,7 @@ class AstNodeSkipper(ast.NodeTransformer):
         return (
             self.target_python_version is not None
             or len(self.constant_vars_to_fold) > 0
+            or self.extras_to_skip_config.has_code_to_skip()
             or self.tokens_to_skip_config.has_code_to_skip()
             or self.sections_to_skip_config.has_code_to_skip()
         )
