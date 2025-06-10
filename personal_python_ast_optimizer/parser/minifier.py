@@ -46,6 +46,10 @@ class MinifyUnparser(_Unparser):
 
         return text
 
+    def maybe_newline(self) -> None:
+        if self._source and self._source[-1] != "\n":
+            self.write("\n")
+
     def visit_node(
         self,
         node: ast.AST,
