@@ -54,6 +54,7 @@ class TokensToSkipConfig(Config):
         "classes",
         "dict_keys",
         "decorators",
+        "module_imports",
         "no_warn",
     )
 
@@ -64,6 +65,7 @@ class TokensToSkipConfig(Config):
         "classes",
         "dict_keys",
         "decorators",
+        "module_imports",
     )
 
     def __init__(
@@ -74,6 +76,7 @@ class TokensToSkipConfig(Config):
         classes: set[str] | None = None,
         dict_keys: set[str] | None = None,
         decorators: set[str] | None = None,
+        module_imports: set[str] | None = None,
         no_warn: set[str] | None = None,
     ):
         self.from_imports = TokensToSkip(from_imports, "from imports")
@@ -82,6 +85,7 @@ class TokensToSkipConfig(Config):
         self.classes = TokensToSkip(classes, "classes")
         self.dict_keys = TokensToSkip(dict_keys, "dict keys")
         self.decorators = TokensToSkip(decorators, "decorators")
+        self.module_imports = TokensToSkip(module_imports, "module imports")
         self.no_warn: set[str] = no_warn if no_warn is not None else set()
 
     def __iter__(self) -> Iterator[TokensToSkip]:

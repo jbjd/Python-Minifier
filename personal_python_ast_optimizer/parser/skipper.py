@@ -230,7 +230,25 @@ class AstNodeSkipper(ast.NodeTransformer):
 
         return self.generic_visit(node)
 
+    def visit_Import(self, node: ast.Import) -> ast.AST | None:
+        """Removes imports provided in config, deleting the whole
+        node if no imports are left"""
+        node.names = [
+            alias
+            for alias in node.names
+            if alias.name not in self.tokens_to_skip_config.module_imports
+        ]
+
+        if not node.names:
+            return None
+
+        return self.generic_visit(node)
+
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST | None:
+        normalized_module_name: str = node.module or ""
+        if normalized_module_name in self.tokens_to_skip_config.module_imports:
+            return None
+
         node.names = [
             alias
             for alias in node.names
