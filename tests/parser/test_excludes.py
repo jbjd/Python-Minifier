@@ -172,6 +172,22 @@ def test_exclude_function_assign(before_and_after: BeforeAndAfter):
     )
 
 
+def test_exclude_module_imports():
+    before_and_after = BeforeAndAfter(
+        """
+import numpy
+from numpy._core import uint8
+""",
+        "",
+    )
+    run_minifiyer_and_assert_correct(
+        before_and_after,
+        tokens_to_skip_config=TokensToSkipConfig(
+            module_imports={"numpy", "numpy._core"}
+        ),
+    )
+
+
 def test_exclude_real_case():
     before_and_after = BeforeAndAfter(
         """
