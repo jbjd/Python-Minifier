@@ -224,6 +224,12 @@ class AstNodeSkipper(ast.NodeTransformer):
 
         return parsed_node
 
+    def visit_AugAssign(self, node: ast.AugAssign) -> ast.AST | None:
+        if get_node_name(node.target) in self.tokens_to_skip_config.variables:
+            return None
+
+        return self.generic_visit(node)
+
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST | None:
         node.names = [
             alias
