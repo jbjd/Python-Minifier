@@ -177,13 +177,14 @@ def test_exclude_module_imports():
         """
 import numpy
 from numpy._core import uint8
+from . import asdf
 """,
         "",
     )
     run_minifiyer_and_assert_correct(
         before_and_after,
         tokens_to_skip_config=TokensToSkipConfig(
-            module_imports={"numpy", "numpy._core"}
+            module_imports={"numpy", "numpy._core", ""}
         ),
     )
 

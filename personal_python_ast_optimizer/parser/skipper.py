@@ -245,7 +245,8 @@ class AstNodeSkipper(ast.NodeTransformer):
         return self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST | None:
-        if node.module in self.tokens_to_skip_config.module_imports:
+        normalized_module_name: str = node.module or ""
+        if normalized_module_name in self.tokens_to_skip_config.module_imports:
             return None
 
         node.names = [
