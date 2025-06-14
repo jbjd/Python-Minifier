@@ -110,6 +110,18 @@ class MinifyUnparser(_Unparser):
         self.set_precedence(ast._Precedence.YIELD, node.value)
         self.traverse(node.value)
 
+    def visit_Import(self, node: ast.Import) -> None:
+        self.fill("import ", splitter=self._get_line_splitter())
+        self.interleave(lambda: self.write(","), self.traverse, node.names)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        self.fill("from ", splitter=self._get_line_splitter())
+        self.write("." * (node.level or 0))
+        if node.module:
+            self.write(node.module)
+        self.write(" import ")
+        self.interleave(lambda: self.write(","), self.traverse, node.names)
+
     def visit_Assign(self, node: ast.Assign) -> None:
         self.fill(splitter=self._get_line_splitter())
         for target in node.targets:
@@ -141,7 +153,12 @@ class MinifyUnparser(_Unparser):
             return ""
 
         previous_node_class: str = self.previous_node_in_body.__class__.__name__
-        if self._indent > 0 and previous_node_class in ["Assign", "Expr"]:
+        if self._indent > 0 and previous_node_class in [
+            "Assign",
+            "Expr",
+            "Import",
+            "ImportFrom",
+        ]:
             return ";"
 
         return "\n"
