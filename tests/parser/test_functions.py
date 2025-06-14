@@ -9,9 +9,9 @@ def foo(bar: str) -> None:
 
     3  # This is some dangling constant
     a: int
-    return "Hello World"
+    return
 """,
-        "def foo(bar):return 'Hello World'",
+        "def foo(bar):return",  # TODO: Skip empty returns at end of body
     )
     run_minifiyer_and_assert_correct(before_and_after)
 
