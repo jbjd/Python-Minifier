@@ -99,6 +99,13 @@ class MinifyUnparser(_Unparser):
     def visit_Continue(self, _: ast.Continue) -> None:
         self.fill("continue", splitter=self._get_line_splitter())
 
+    def visit_Assert(self, node: ast.Assert) -> None:
+        self.fill("assert ", splitter=self._get_line_splitter())
+        self.traverse(node.test)
+        if node.msg:
+            self.write(", ")
+            self.traverse(node.msg)
+
     def visit_Return(self, node: ast.Return) -> None:
         self.fill("return", splitter=self._get_line_splitter())
         if node.value:
@@ -174,6 +181,7 @@ class MinifyUnparser(_Unparser):
 
         previous_node_class: str = self.previous_node_in_body.__class__.__name__
         if self._indent > 0 and previous_node_class in [
+            "Assert",
             "Assign",
             "AugAssign",
             "Expr",

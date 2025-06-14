@@ -12,6 +12,7 @@ comparison_and_conjunctions: list[str] = [
     " for ",
     " async for ",
     " from ",
+    " as ",
 ]
 
 operators_and_separators: list[str] = [

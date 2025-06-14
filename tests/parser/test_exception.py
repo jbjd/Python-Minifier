@@ -6,10 +6,10 @@ def test_raise_same_line():
         """
 try:
     pass
-except Exception as e:
+except (Exception, ValueError) as e:
     raise ValueError('a') from e
 """,
-        "try:pass\nexcept Exception as e:raise ValueError('a')from e",
+        "try:pass\nexcept(Exception,ValueError)as e:raise ValueError('a')from e",
     )
 
     run_minifiyer_and_assert_correct(before_and_after)
