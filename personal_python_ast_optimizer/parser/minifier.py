@@ -33,7 +33,14 @@ class MinifyUnparser(_Unparser):
 
     def write(self, *text: str) -> None:
         """Write text, with some mapping replacements"""
+        if len(text) == 0:
+            return
+
         text = tuple(map(self._update_text_to_write, text))
+
+        if text[0] == "(" and self._last_char_is(" "):
+            self._source[-1] = self._source[-1][:-1]
+
         self._source.extend(text)
 
     def _update_text_to_write(self, text: str) -> str:
@@ -131,10 +138,15 @@ class MinifyUnparser(_Unparser):
         self.traverse(node.value)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        self.fill()
+        self.fill(splitter=self._get_line_splitter())
         self.traverse(node.target)
         self.write(self.binop[node.op.__class__.__name__] + "=")
         self.traverse(node.value)
+
+    def _last_char_is(self, char_to_check: str) -> bool:
+        return (
+            self._source and self._source[-1] and self._source[-1][-1] == char_to_check
+        )
 
     def _get_space_before_write(self) -> str:
         if not self._source:
@@ -155,6 +167,7 @@ class MinifyUnparser(_Unparser):
         previous_node_class: str = self.previous_node_in_body.__class__.__name__
         if self._indent > 0 and previous_node_class in [
             "Assign",
+            "AugAssign",
             "Expr",
             "Import",
             "ImportFrom",
