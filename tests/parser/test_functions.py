@@ -43,3 +43,16 @@ def foo(bar):
 """.strip(),
     )
     run_minifiyer_and_assert_correct(before_and_after)
+
+
+def test_function_call_same_line():
+    before_and_after = BeforeAndAfter(
+        """
+if a==b:
+    a()
+    b()
+    c()
+""",
+        "if a==b:\n\ta();b();c()",
+    )
+    run_minifiyer_and_assert_correct(before_and_after)

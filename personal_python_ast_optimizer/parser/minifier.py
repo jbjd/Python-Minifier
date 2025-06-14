@@ -105,6 +105,11 @@ class MinifyUnparser(_Unparser):
             self.write(" from ")
             self.traverse(node.cause)
 
+    def visit_Expr(self, node: ast.Expr) -> None:
+        self.fill(splitter=self._get_line_splitter())
+        self.set_precedence(ast._Precedence.YIELD, node.value)
+        self.traverse(node.value)
+
     def visit_Assign(self, node: ast.Assign) -> None:
         self.fill(splitter=self._get_line_splitter())
         for target in node.targets:
@@ -135,7 +140,8 @@ class MinifyUnparser(_Unparser):
         ):
             return ""
 
-        if isinstance(self.previous_node_in_body, ast.Assign):
+        previous_node_class: str = self.previous_node_in_body.__class__.__name__
+        if self._indent > 0 and previous_node_class in ["Assign", "Expr"]:
             return ";"
 
         return "\n"

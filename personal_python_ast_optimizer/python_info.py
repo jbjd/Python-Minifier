@@ -11,6 +11,7 @@ comparison_and_conjunctions: list[str] = [
     " not in ",
     " for ",
     " async for ",
+    " from ",
 ]
 
 operators_and_separators: list[str] = [
