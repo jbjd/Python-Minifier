@@ -3,6 +3,7 @@ from ast import _Unparser  # type: ignore
 from typing import Literal
 
 from personal_python_ast_optimizer.python_info import (
+    chars_that_dont_need_whitespace,
     comparison_and_conjunctions,
     operators_and_separators,
 )
@@ -22,6 +23,9 @@ class MinifyUnparser(_Unparser):
 
     def fill(self, text: str = "", splitter: Literal["", "\n", ";"] = "\n") -> None:
         """Overrides super fill to use tabs over spaces and different line splitters"""
+        if text == "" and (splitter == "" or not self._source):
+            return
+
         match splitter:
             case "\n":
                 self.maybe_newline()
@@ -38,7 +42,11 @@ class MinifyUnparser(_Unparser):
 
         text = tuple(map(self._update_text_to_write, text))
 
-        if text[0] == "(" and self._last_char_is(" "):
+        first_letter_to_write: str = text[0][:1]
+        if (
+            first_letter_to_write in chars_that_dont_need_whitespace
+            and self._last_char_is(" ")
+        ):
             self._source[-1] = self._source[-1][:-1]
 
         self._source.extend(text)
@@ -152,7 +160,7 @@ class MinifyUnparser(_Unparser):
         if not self._source:
             return ""
         most_recent_token: str = self._source[-1]
-        return "" if most_recent_token[-1:] in ("'", '"', ")", "]", "}") else " "
+        return "" if most_recent_token[-1:] in chars_that_dont_need_whitespace else " "
 
     def _get_line_splitter(self) -> Literal["", "\n", ";"]:
         """Get character that starts the next line of code with the shortest

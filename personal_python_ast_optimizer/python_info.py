@@ -49,3 +49,5 @@ operators_and_separators: list[str] = [
     " & ",
     " ^ ",
 ]
+
+chars_that_dont_need_whitespace: list[str] = ["'", '"', "(", ")", "[", "]", "{", "}"]
